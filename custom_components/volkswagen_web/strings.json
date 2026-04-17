@@ -139,6 +139,35 @@
         "name": "Récupérer l'historique"
       }
     },
+    "select": {
+      "scan_interval": {
+        "name": "Fréquence de synchronisation"
+      },
+      "scan_weekday": {
+        "name": "Jour de synchronisation"
+      }
+    },
+    "number": {
+      "request_advance_hours": {
+        "name": "Heures d'avance de demande"
+      },
+      "scan_day_of_month": {
+        "name": "Jour du mois de synchronisation"
+      }
+    },
+    "switch": {
+      "auto_request_update": {
+        "name": "Demande automatique de rapport"
+      },
+      "fetch_history_on_setup": {
+        "name": "Historique au démarrage"
+      }
+    },
+    "time": {
+      "scan_time": {
+        "name": "Heure de synchronisation"
+      }
+    },
     "camera": {
       "vehicle_images": {
         "name": "Images véhicule"

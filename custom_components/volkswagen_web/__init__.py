@@ -38,8 +38,6 @@ _LOGGER = logging.getLogger(__name__)
 # Configuration : supports config entries uniquement (pas de YAML)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-PLATFORMS = ["sensor", "button", "camera", "image"]
-
 
 SERVICE_SCHEMA = vol.Schema({vol.Required("device_id"): cv.string})
 

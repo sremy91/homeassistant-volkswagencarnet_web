@@ -66,7 +66,7 @@ DATA_UNDO_UPDATE_LISTENER = "undo_update_listener"
 DATA_LAST_REQUEST_AT = "last_request_at"
 
 # Plateformes
-PLATFORMS = ["sensor", "button", "camera"]
+PLATFORMS = ["sensor", "button", "camera", "image", "select", "number", "switch", "time"]
 
 # Service (futur)
 SERVICE_REQUEST_REPORT = "request_vehicle_report"

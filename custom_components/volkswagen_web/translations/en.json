@@ -145,6 +145,35 @@
         "name": "History"
       }
     },
+    "select": {
+      "scan_interval": {
+        "name": "Sync interval"
+      },
+      "scan_weekday": {
+        "name": "Sync weekday"
+      }
+    },
+    "number": {
+      "request_advance_hours": {
+        "name": "Request lead time (hours)"
+      },
+      "scan_day_of_month": {
+        "name": "Sync day of month"
+      }
+    },
+    "switch": {
+      "auto_request_update": {
+        "name": "Automatic report request"
+      },
+      "fetch_history_on_setup": {
+        "name": "Fetch history on startup"
+      }
+    },
+    "time": {
+      "scan_time": {
+        "name": "Sync time"
+      }
+    },
     "camera": {
       "vehicle_images": {
         "name": "Vehicle images"
