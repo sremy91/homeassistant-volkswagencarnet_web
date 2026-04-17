@@ -82,6 +82,9 @@
   },
   "entity": {
     "sensor": {
+      "vin": {
+        "name": "Numéro VIN"
+      },
       "mileage_km": {
         "name": "Kilométrage"
       },

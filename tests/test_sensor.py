@@ -69,8 +69,8 @@ def _make_coordinator(vin: str = "WVWTEST0000000001") -> MagicMock:
 # ── Tests SENSOR_DESCRIPTIONS ────────────────────────────────────────────────
 
 def test_sensor_descriptions_count():
-    """14 sensors doivent être définis."""
-    assert len(SENSOR_DESCRIPTIONS) == 14
+    """15 sensors doivent être définis."""
+    assert len(SENSOR_DESCRIPTIONS) == 15
 
 
 def test_sensor_descriptions_structure():
@@ -82,6 +82,7 @@ def test_sensor_descriptions_structure():
 # ── Tests VolkswagenSensor ───────────────────────────────────────────────────
 
 @pytest.mark.parametrize("attr,expected", [
+    ("vin", "WVWTEST0000000001"),
     ("mileage_km", 42000),
     ("model_name", "Golf 8 1.5 eTSI"),
     ("license_plate", "AA-123-AA"),

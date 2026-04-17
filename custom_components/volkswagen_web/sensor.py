@@ -23,6 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # (attr, device_class, state_class, unit, entity_category, icon)
 SENSOR_DESCRIPTIONS: list[tuple[str, str | None, str | None, str | None, str | None, str | None]] = [
+    ("vin",                   None,                         None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:identifier"),
     ("mileage_km",            SensorDeviceClass.DISTANCE,   SensorStateClass.TOTAL_INCREASING, "km",  None,                         "mdi:counter"),
     ("last_report_timestamp", SensorDeviceClass.TIMESTAMP,  None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:clock-outline"),
     ("model_name",            None,                         None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:car-info"),
@@ -130,6 +131,10 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
         vehicle_data = self._get_vehicle_data()
         if not vehicle_data:
             return None
+
+        # VIN
+        if self._attr == "vin":
+            return self._vin
 
         state = vehicle_data.get("state")
         if not state:

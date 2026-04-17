@@ -80,6 +80,9 @@
   },
   "entity": {
     "sensor": {
+      "vin": {
+        "name": "VIN Number"
+      },
       "mileage_km": {
         "name": "Mileage"
       },
