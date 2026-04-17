@@ -16,6 +16,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
+    CONF_CAMERA_ROTATION_SECONDS,
     CONF_EMAIL,
     CONF_FETCH_HISTORY_ON_SETUP,
     CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
@@ -114,6 +115,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES: merged_config.get(
                     CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES
                 ),
+                CONF_CAMERA_ROTATION_SECONDS: merged_config.get(CONF_CAMERA_ROTATION_SECONDS),
             },
         )
 

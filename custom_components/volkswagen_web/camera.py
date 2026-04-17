@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import base64
 import logging
+import time as time_module
 from typing import Any
 
-from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -88,7 +88,7 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
-        """Retourne la première image extérieure en JPEG (base64 → bytes)."""
+        """Retourne une image extérieure (rotation toutes les N secondes)."""
         vehicle_data = (self.coordinator.data or {}).get(self._vin)
         if not vehicle_data:
             _LOGGER.debug("Camera fetch %s: no vehicle data", self._vin)
@@ -99,19 +99,22 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
             _LOGGER.debug("Camera fetch %s: no images returned", self._vin)
             return None
 
-        # Première image disponible
-        first = images[0]
+        rotation_seconds = max(1, int(self.coordinator.camera_rotation_seconds))
+        current_index = (int(time_module.time()) // rotation_seconds) % len(images)
+
+        current = images[current_index]
         image_data = (
-            first.get("image_data")
-            or first.get("data")
-            or first.get("base64")
-            or first.get("b64")
+            current.get("image_data")
+            or current.get("data")
+            or current.get("base64")
+            or current.get("b64")
         )
         if not image_data:
             _LOGGER.debug(
-                "Camera fetch %s: first image missing payload key (known keys=%s)",
+                "Camera fetch %s: image[%d] missing payload key (known keys=%s)",
                 self._vin,
-                sorted(first.keys()),
+                current_index,
+                sorted(current.keys()),
             )
             return None
 
@@ -121,7 +124,13 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
                 image_bytes = base64.b64decode(image_data)
             else:
                 image_bytes = image_data
-            _LOGGER.debug("Camera fetch %s: decoded %d bytes", self._vin, len(image_bytes))
+            _LOGGER.debug(
+                "Camera fetch %s: image[%d] decoded %d bytes (rotation=%ss)",
+                self._vin,
+                current_index,
+                len(image_bytes),
+                rotation_seconds,
+            )
             return image_bytes
         except Exception as err:
             _LOGGER.error("Erreur décodage image VIN %s: %s", self._vin, err)
@@ -132,9 +141,13 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         """Nombre d'images disponibles et métadonnées."""
         vehicle_data = (self.coordinator.data or {}).get(self._vin) or {}
         images = vehicle_data.get("images") or []
+        rotation_seconds = max(1, int(self.coordinator.camera_rotation_seconds))
+        current_index = (int(time_module.time()) // rotation_seconds) % len(images) if images else 0
         return {
             "vin": self._vin,
             "image_count": len(images),
+            "rotation_seconds": rotation_seconds,
+            "current_image_index": current_index,
             "image_urls": [
                 img.get("url") or img.get("imageUrl") or img.get("source_url")
                 for img in images

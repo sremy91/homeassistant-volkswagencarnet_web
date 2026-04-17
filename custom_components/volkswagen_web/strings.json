@@ -27,7 +27,8 @@
           "fetch_history_on_setup": "Récupérer l'historique à l'installation",
           "auto_request_update": "Demander automatiquement les mises à jour",
           "request_advance_hours": "Heures avant pour déclencher la demande",
-          "manual_request_refresh_delay_minutes": "Délai de récupération après demande manuelle (minutes)"
+          "manual_request_refresh_delay_minutes": "Délai de récupération après demande manuelle (minutes)",
+          "camera_rotation_seconds": "Rotation caméra (secondes)"
         }
       },
       "vehicles": {
@@ -53,7 +54,8 @@
           "scan_interval": "Fréquence de synchronisation",
           "fetch_history_on_setup": "Récupérer l'historique au démarrage",
           "auto_request_update": "Demander automatiquement les mises à jour",
-          "request_advance_hours": "Heures avant pour déclencher la demande"
+          "request_advance_hours": "Heures avant pour déclencher la demande",
+          "camera_rotation_seconds": "Rotation caméra (secondes)"
         }
       },
       "schedule_options": {
@@ -65,7 +67,8 @@
           "fetch_history_on_setup": "Récupérer l'historique au démarrage",
           "auto_request_update": "Demander automatiquement les mises à jour",
           "request_advance_hours": "Heures avant pour déclencher la demande",
-          "manual_request_refresh_delay_minutes": "Délai de récupération après demande manuelle (minutes)"
+          "manual_request_refresh_delay_minutes": "Délai de récupération après demande manuelle (minutes)",
+          "camera_rotation_seconds": "Rotation caméra (secondes)"
         }
       }
     }
@@ -155,6 +158,9 @@
       },
       "manual_request_refresh_delay_minutes": {
         "name": "Délai de récupération manuelle (minutes)"
+      },
+      "camera_rotation_seconds": {
+        "name": "Rotation caméra (secondes)"
       },
       "scan_day_of_month": {
         "name": "Jour du mois de synchronisation"

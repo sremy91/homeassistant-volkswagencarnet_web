@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    CONF_CAMERA_ROTATION_SECONDS,
     CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
@@ -34,6 +35,7 @@ async def async_setup_entry(
         [
             VolkswagenRequestAdvanceHoursNumber(coordinator, entry),
             VolkswagenManualRequestRefreshDelayNumber(coordinator, entry),
+            VolkswagenCameraRotationSecondsNumber(coordinator, entry),
             VolkswagenScanDayOfMonthNumber(coordinator, entry),
         ]
     )
@@ -137,5 +139,29 @@ class VolkswagenManualRequestRefreshDelayNumber(VolkswagenBaseOptionNumber):
             self.hass,
             self._entry,
             CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+            int(value),
+        )
+
+
+class VolkswagenCameraRotationSecondsNumber(VolkswagenBaseOptionNumber):
+    """Intervalle de rotation des images caméra (secondes)."""
+
+    def __init__(self, coordinator: VolkswagenWebCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry, CONF_CAMERA_ROTATION_SECONDS)
+        self._attr_translation_key = CONF_CAMERA_ROTATION_SECONDS
+        self._attr_native_min_value = 1
+        self._attr_native_max_value = 300
+        self._attr_native_step = 1
+
+    @property
+    def native_value(self) -> float:
+        options = editable_options_from_entry(self._entry)
+        return float(options.get(CONF_CAMERA_ROTATION_SECONDS, 1))
+
+    async def async_set_native_value(self, value: float) -> None:
+        await async_update_editable_option(
+            self.hass,
+            self._entry,
+            CONF_CAMERA_ROTATION_SECONDS,
             int(value),
         )

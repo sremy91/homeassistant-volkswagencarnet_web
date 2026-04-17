@@ -15,6 +15,7 @@ from volkswagencarnet_web import VolkswagenWebConnection
 
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
+    CONF_CAMERA_ROTATION_SECONDS,
     CONF_EMAIL,
     CONF_FETCH_HISTORY_ON_SETUP,
     CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
@@ -27,6 +28,7 @@ from .const import (
     CONF_SCAN_WEEKDAY,
     CONF_VEHICLES,
     DEFAULT_AUTO_REQUEST_UPDATE,
+    DEFAULT_CAMERA_ROTATION_SECONDS,
     DEFAULT_FETCH_HISTORY_ON_SETUP,
     DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     DEFAULT_REQUEST_ADVANCE_HOURS,
@@ -84,6 +86,13 @@ def _build_schedule_schema(
                 DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
             ),
         ): vol.All(vol.Coerce(int), vol.Range(min=1, max=720)),
+        key_fn(
+            CONF_CAMERA_ROTATION_SECONDS,
+            default=defaults.get(
+                CONF_CAMERA_ROTATION_SECONDS,
+                DEFAULT_CAMERA_ROTATION_SECONDS,
+            ),
+        ): vol.All(vol.Coerce(int), vol.Range(min=1, max=300)),
     }
 
     if interval in (SCAN_INTERVAL_WEEKLY, SCAN_INTERVAL_BIWEEKLY):
@@ -139,6 +148,14 @@ def _validate_schedule_input(interval: str, data: dict[str, Any]) -> tuple[dict[
         normalized[CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES] = delay
     except (TypeError, ValueError):
         errors[CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES] = "invalid_number"
+
+    try:
+        rotation = int(data.get(CONF_CAMERA_ROTATION_SECONDS, DEFAULT_CAMERA_ROTATION_SECONDS))
+        if rotation < 1 or rotation > 300:
+            raise ValueError()
+        normalized[CONF_CAMERA_ROTATION_SECONDS] = rotation
+    except (TypeError, ValueError):
+        errors[CONF_CAMERA_ROTATION_SECONDS] = "invalid_number"
 
     return normalized, errors
 
@@ -303,6 +320,10 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
                     CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
                     DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
                 ),
+                CONF_CAMERA_ROTATION_SECONDS: user_input.get(
+                    CONF_CAMERA_ROTATION_SECONDS,
+                    DEFAULT_CAMERA_ROTATION_SECONDS,
+                ),
             }
             return await self.async_step_schedule_options()
 
@@ -342,6 +363,13 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
                             DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=720)),
+                    vol.Optional(
+                        CONF_CAMERA_ROTATION_SECONDS,
+                        default=current.get(
+                            CONF_CAMERA_ROTATION_SECONDS,
+                            DEFAULT_CAMERA_ROTATION_SECONDS,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=300)),
                 }
             ),
         )

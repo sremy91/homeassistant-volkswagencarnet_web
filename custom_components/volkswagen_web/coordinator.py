@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
+    CONF_CAMERA_ROTATION_SECONDS,
     CONF_EMAIL,
     CONF_FETCH_HISTORY_ON_SETUP,
     CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
@@ -22,6 +23,7 @@ from .const import (
     CONF_SCAN_TIME,
     CONF_SCAN_WEEKDAY,
     DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+    DEFAULT_CAMERA_ROTATION_SECONDS,
     DOMAIN,
     SCAN_INTERVAL_BIWEEKLY,
     SCAN_INTERVAL_DAILY,
@@ -96,6 +98,10 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         self._manual_request_refresh_delay_minutes = _to_int_or_default(
             config.get(CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES),
             DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+        )
+        self._camera_rotation_seconds = _to_int_or_default(
+            config.get(CONF_CAMERA_ROTATION_SECONDS),
+            DEFAULT_CAMERA_ROTATION_SECONDS,
         )
         self._username = config.get(CONF_EMAIL)
         self._password = config.get(CONF_PASSWORD)
@@ -505,3 +511,8 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         for handle in self._pending_manual_refresh.values():
             handle.cancel()
         self._pending_manual_refresh.clear()
+
+    @property
+    def camera_rotation_seconds(self) -> int:
+        """Intervalle de rotation des images caméra en secondes."""
+        return max(1, int(self._camera_rotation_seconds))
