@@ -5,7 +5,7 @@
   "config_flow": true,
   "documentation": "https://github.com/sremy91/homeassistant-volkswagencarnet_web",
   "issue_tracker": "https://github.com/sremy91/homeassistant-volkswagencarnet_web/issues",
-  "requirements": ["volkswagencarnet_web>=0.1.0"],
+  "requirements": ["volkswagencarnet_web @ git+https://github.com/sremy91/volkswagencarnet_web.git@main"],
   "version": "0.1.0",
   "homeassistant": "2024.1.0"
 }

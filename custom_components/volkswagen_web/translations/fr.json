@@ -11,16 +11,21 @@
         }
       },
       "scan_settings": {
-        "title": "Paramètres de synchronisation",
-        "description": "Configurez la fréquence de récupération des données",
+        "title": "Intervalle de synchronisation",
+        "description": "Choisissez la fréquence de mise à jour des données",
         "data": {
-          "scan_interval": "Intervalle de synchronisation",
-          "auto_request_update": "Demander automatiquement les mises à jour du rapport",
-          "request_advance_hours": "Déclencher la demande N heures avant"
-        },
-        "data_description": {
-          "scan_interval": "La fréquence à laquelle les données seront mises à jour",
-          "request_advance_hours": "Par exemple : si défini à 1h et qu'un rapport est prévu à 18h, il sera déclenché à 17h"
+          "scan_interval": "Fréquence"
+        }
+      },
+      "schedule_time": {
+        "title": "Horaire de synchronisation",
+        "description": "Configurez l'heure et le jour de synchronisation",
+        "data": {
+          "scan_time": "Heure (HH:MM)",
+          "scan_weekday": "Jour de la semaine",
+          "scan_day_of_month": "Jour du mois",
+          "auto_request_update": "Demander automatiquement les mises à jour",
+          "request_advance_hours": "Heures avant pour déclencher la demande"
         }
       },
       "vehicles": {
@@ -31,10 +36,14 @@
     "error": {
       "invalid_auth": "Authentification échouée. Vérifiez votre e-mail et mot de passe.",
       "cannot_connect": "Impossible de se connecter. Vérifiez votre connexion réseau.",
-      "unknown": "Erreur inconnue lors de la configuration."
+      "unknown": "Erreur inconnue lors de la configuration.",
+      "invalid_time_format": "Format d'heure invalide. Utilisez HH:MM (ex: 08:30).",
+      "invalid_weekday": "Jour de la semaine invalide.",
+      "invalid_day_of_month": "Jour du mois invalide (1-31)."
     },
     "abort": {
-      "already_configured": "Ce compte est déjà configuré."
+      "already_configured": "Ce compte est déjà configuré.",
+      "no_vehicles_selected": "Aucun véhicule sélectionné"
     }
   },
   "options": {
@@ -42,9 +51,19 @@
       "init": {
         "title": "Options Volkswagen Web",
         "data": {
-          "scan_interval": "Intervalle de synchronisation",
+          "scan_interval": "Fréquence de synchronisation",
           "auto_request_update": "Demander automatiquement les mises à jour",
-          "request_advance_hours": "Déclencher la demande N heures avant"
+          "request_advance_hours": "Heures avant pour déclencher la demande"
+        }
+      },
+      "schedule_options": {
+        "title": "Horaire de synchronisation",
+        "data": {
+          "scan_time": "Heure (HH:MM)",
+          "scan_weekday": "Jour de la semaine",
+          "scan_day_of_month": "Jour du mois",
+          "auto_request_update": "Demander automatiquement les mises à jour",
+          "request_advance_hours": "Heures avant pour déclencher la demande"
         }
       }
     }

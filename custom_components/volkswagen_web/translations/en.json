@@ -34,7 +34,10 @@
     "error": {
       "invalid_auth": "Authentication failed. Please check your email and password.",
       "cannot_connect": "Unable to connect. Please check your network connection.",
-      "unknown": "Unknown error during configuration."
+      "unknown": "Unknown error during configuration.",
+      "invalid_time_format": "Invalid time format. Use HH:MM (e.g. 08:30).",
+      "invalid_weekday": "Invalid weekday.",
+      "invalid_day_of_month": "Invalid day of month (1-31)."
     },
     "abort": {
       "already_configured": "This account is already configured.",
