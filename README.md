@@ -1,4 +1,4 @@
-# Volkswagen Connect Web - An Home Assistant custom component to interact with the VW Connect Web service. (EU ONLY)
+# Volkswagen Connect Web - A Home Assistant custom component for VW Connect Web (EU only)
 
 Custom component for Home Assistant that integrates the **Volkswagen France web portal** (`www.volkswagen.fr`) 
 into Home Assistant using the [`volkswagencarnet_web`](https://github.com/sremy91/volkswagencarnet_web) Python module.
@@ -38,7 +38,7 @@ With HACS:
 
 1. In Home Assistant, go to **Settings** → **Devices & Services** → **Custom Repositories**
 2. Add: `https://github.com/sremy91/homeassistant-volkswagencarnet_web` (Type: Integration)
-3. Search for "Volkswagen Web FR" and install
+3. Search for "Volkswagen Connect Web" and install
 4. Restart Home Assistant
 
 ## Configuration
@@ -60,7 +60,7 @@ With HACS:
 - **Sync interval**: Choose between:
   - **Hourly** (recommended): Refresh every 1 hour
   - **Monthly**: Refresh every 30 days
-- **Fetch history on startup**: fetch warninglights history after setup/startup
+- **Fetch history on startup**: fetch warning lights history after setup/startup
 - **Auto health reports**: Enable automatic vehicle report requests
 - **Pre-trigger hours**: Hours to request the report in advance (1-24, default: 1)
   - Example: If set to `1` hour and a report is due at 18:00, it will be triggered at 17:00
@@ -96,7 +96,7 @@ Choose which vehicles to integrate into Home Assistant.
 | Button | Description |
 |---|---|
 | `request_update` | Request a new vehicle health report |
-| `request_history` | Fetch warninglights history |
+| `request_history` | Fetch warning lights history |
 
 ### Camera
 
@@ -140,7 +140,7 @@ After initial setup, you can modify:
 3. **Auto health reports**: Enable/disable automatic report requests
 4. **Pre-trigger hours**: Change the advance warning time
 
-Go to **Settings** → **Devices & Services** → **Volkswagen Web FR** → Click your device → **Options**
+Go to **Settings** → **Devices & Services** → **Volkswagen Connect Web** → Click your device → **Options**
 
 ## Troubleshooting
 
@@ -161,8 +161,8 @@ Go to **Settings** → **Devices & Services** → **Volkswagen Web FR** → Clic
 - VILMA (image service) may be temporarily unavailable
 - Restart the integration
 
-### Contracts show `0 contrat(s)`
-- Trigger a manual `Nouveau rapport` and refresh once the report is available
+### Contracts show `0 contract(s)`
+- Trigger a manual `New report` (`Nouveau rapport`) and refresh once the report is available
 - Verify contracts are visible in the Volkswagen web portal account
 - Some accounts expose contracts with delay depending on backend sync
 
