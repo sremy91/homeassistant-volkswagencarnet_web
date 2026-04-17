@@ -234,12 +234,15 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         next_request = next_refresh - timedelta(hours=self._request_advance_hours)
         now = dt_util.now()  # datetime aware
 
+        # Rend next_request aware avant la comparaison
+        next_request = self._as_local_aware(next_request)
+
         if next_request <= now:
             # Passe un datetime naive à la méthode interne
             next_refresh = self._as_local_aware(
                 self._calculate_next_refresh_datetime(now.replace(tzinfo=None) + timedelta(seconds=1))
             )
-            next_request = next_refresh - timedelta(hours=self._request_advance_hours)
+            next_request = self._as_local_aware(next_refresh - timedelta(hours=self._request_advance_hours))
 
         last_request = self._last_request_at.get(vin)
         if last_request and next_request <= last_request:
@@ -247,9 +250,9 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             next_refresh = self._as_local_aware(
                 self._calculate_next_refresh_datetime(next_refresh.replace(tzinfo=None) + timedelta(seconds=1))
             )
-            next_request = next_refresh - timedelta(hours=self._request_advance_hours)
+            next_request = self._as_local_aware(next_refresh - timedelta(hours=self._request_advance_hours))
 
-        return self._as_local_aware(next_request)
+        return next_request
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Récupère les données du véhicule."""
