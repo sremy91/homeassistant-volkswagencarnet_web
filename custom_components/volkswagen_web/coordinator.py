@@ -30,6 +30,27 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _to_int_or_default(value: Any, default: int) -> int:
+    """Convert a value to int with a safe default when value is None/invalid."""
+    try:
+        if value is None:
+            return default
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _to_bool_or_default(value: Any, default: bool) -> bool:
+    """Convert a value to bool while keeping a fallback for missing values."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
 class VolkswagenWebCoordinator(DataUpdateCoordinator):
     """Coordinateur pour mettre à jour les données du véhicule."""
 
@@ -46,17 +67,23 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         self.config = config
 
         # Récupère les paramètres de configuration
-        self.scan_interval_key = config.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL_DAILY)
-        self.scan_time_str = config.get(CONF_SCAN_TIME, "10:00")
-        self.scan_weekday = int(config.get(CONF_SCAN_WEEKDAY, 0))  # 0 = Monday
-        self.scan_day_of_month = int(config.get(CONF_SCAN_DAY_OF_MONTH, 1))
+        self.scan_interval_key = config.get(CONF_SCAN_INTERVAL) or SCAN_INTERVAL_DAILY
+        self.scan_time_str = str(config.get(CONF_SCAN_TIME) or "10:00")
+        self.scan_weekday = _to_int_or_default(config.get(CONF_SCAN_WEEKDAY), 0)  # 0 = Monday
+        self.scan_day_of_month = _to_int_or_default(config.get(CONF_SCAN_DAY_OF_MONTH), 1)
 
         # Calcule l'intervalle initial
         update_interval = self._calculate_next_update_interval()
 
         self._last_request_at: dict[str, datetime] = {}
-        self._auto_request_enabled = config.get(CONF_AUTO_REQUEST_UPDATE, True)
-        self._request_advance_hours = config.get(CONF_REQUEST_ADVANCE_HOURS, 1)
+        self._auto_request_enabled = _to_bool_or_default(
+            config.get(CONF_AUTO_REQUEST_UPDATE),
+            True,
+        )
+        self._request_advance_hours = _to_int_or_default(
+            config.get(CONF_REQUEST_ADVANCE_HOURS),
+            1,
+        )
         self._username = config.get(CONF_EMAIL)
         self._password = config.get(CONF_PASSWORD)
 
