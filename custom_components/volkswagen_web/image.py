@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import base64
+import collections
 import logging
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.image import ImageEntity
@@ -58,6 +60,9 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         self._image_index = image_index
         self._attr_unique_id = f"{vin}-image-{image_index}"
         self._attr_translation_key = "vehicle_image"
+        # ImageEntity.__init__ requires hass; initialize its state manually
+        self.access_tokens: collections.deque = collections.deque([], 2)
+        self._cache = None
 
     @property
     def device_info(self) -> dict[str, Any]:
@@ -86,14 +91,18 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         """Nom de l'entité: "Image N+1"."""
         return f"Image {self._image_index + 1}"
 
+    async def async_added_to_hass(self) -> None:
+        """Appelé quand l'entité est ajoutée à HA: génère le token d'accès."""
+        await super().async_added_to_hass()
+        await self.async_update_token()
+
     @property
-    def image_last_updated(self) -> str | None:
+    def image_last_updated(self) -> datetime | None:
         """Timestamp de la mise à jour du coordinateur."""
         if not self.coordinator.last_update_success:
             return None
         vehicle_data = (self.coordinator.data or {}).get(self._vin) or {}
-        timestamp = vehicle_data.get("timestamp")
-        return timestamp.isoformat() if timestamp else None
+        return vehicle_data.get("timestamp")  # datetime object, not string
 
     async def async_image(self) -> bytes | None:
         """Retourne les bytes JPEG/PNG de l'image (base64 → bytes)."""

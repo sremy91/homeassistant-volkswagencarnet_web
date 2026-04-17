@@ -133,10 +133,10 @@
     },
     "button": {
       "request_update": {
-        "name": "Demander un rapport"
+        "name": "Nouveau rapport"
       },
       "request_history": {
-        "name": "Récupérer l'historique"
+        "name": "Historique"
       }
     },
     "camera": {

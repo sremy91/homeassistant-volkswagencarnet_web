@@ -133,10 +133,10 @@
     },
     "button": {
       "request_update": {
-        "name": "Request health report"
+        "name": "New report"
       },
       "request_history": {
-        "name": "Fetch history"
+        "name": "History"
       }
     },
     "camera": {
