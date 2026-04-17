@@ -154,6 +154,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         entry_data = hass.data[DOMAIN].pop(entry.entry_id)
+        coordinator = entry_data.get(DATA_COORDINATOR)
+        if coordinator:
+            coordinator.cancel_scheduled_manual_refreshes()
         connection = entry_data.get(DATA_VW_CONN)
         if connection:
             await connection.__aexit__(None, None, None)

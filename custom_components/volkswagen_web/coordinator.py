@@ -77,6 +77,7 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         update_interval = self._calculate_next_update_interval()
 
         self._last_request_at: dict[str, datetime] = {}
+        self._pending_manual_refresh: dict[str, asyncio.TimerHandle] = {}
         self._history_cache: dict[str, dict[str, Any]] = {}
         self._auto_request_enabled = _to_bool_or_default(
             config.get(CONF_AUTO_REQUEST_UPDATE),
@@ -450,11 +451,50 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             _LOGGER.info(f"Déclenchement manuel de request_update pour {vin}")
             result = await vehicle.request_new_report()
             self._last_request_at[vin] = datetime.now()
+            _LOGGER.debug("Réponse request_update manuel pour %s: %s", vin, result)
 
-            # Force un refresh
-            await self.async_request_refresh()
+            # Programme une récupération différée après demande manuelle.
+            self._schedule_delayed_refresh_after_manual_request(vin)
             return True
 
         except Exception as err:
             _LOGGER.error(f"Erreur lors du manual request_update pour {vin}: {err}")
             return False
+
+    def _manual_request_delay(self) -> timedelta:
+        """Délai avant récupération après demande manuelle de rapport.
+
+        Basé sur l'intervalle configuré, plafonné à 1 heure.
+        """
+        configured_delay = SCAN_INTERVAL_MAP.get(self.scan_interval_key, timedelta(hours=1))
+        return min(configured_delay, timedelta(hours=1))
+
+    def _schedule_delayed_refresh_after_manual_request(self, vin: str) -> None:
+        """Planifie un refresh différé après un request_update manuel."""
+        previous = self._pending_manual_refresh.pop(vin, None)
+        if previous:
+            previous.cancel()
+
+        delay = self._manual_request_delay()
+
+        def _run_refresh() -> None:
+            self._pending_manual_refresh.pop(vin, None)
+            _LOGGER.info(
+                "Exécution de la récupération programmée après request_update (VIN=%s)",
+                vin,
+            )
+            self.hass.async_create_task(self.async_request_refresh())
+
+        handle = self.hass.loop.call_later(delay.total_seconds(), _run_refresh)
+        self._pending_manual_refresh[vin] = handle
+        _LOGGER.info(
+            "Récupération programmée pour VIN %s dans %s",
+            vin,
+            delay,
+        )
+
+    def cancel_scheduled_manual_refreshes(self) -> None:
+        """Annule les récupérations programmées."""
+        for handle in self._pending_manual_refresh.values():
+            handle.cancel()
+        self._pending_manual_refresh.clear()
