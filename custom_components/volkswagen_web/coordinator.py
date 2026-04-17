@@ -9,6 +9,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
@@ -122,6 +123,16 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             _LOGGER.warning(f"Format d'heure invalide: {self.scan_time_str}, utilise 10:00 par défaut")
             return time(hour=10, minute=0)
 
+    @staticmethod
+    def _as_local_aware(value: datetime | None) -> datetime | None:
+        """Convertit un datetime naïf en datetime local timezone-aware."""
+        if value is None:
+            return None
+        if value.tzinfo is not None:
+            return value
+        local_tz = dt_util.now().tzinfo
+        return value.replace(tzinfo=local_tz)
+
     def _calculate_next_refresh_datetime(self, now: datetime | None = None) -> datetime:
         """Calcule la prochaine date de synchronisation."""
         now = now or datetime.now()
@@ -206,7 +217,7 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
     def get_next_refresh_at(self) -> datetime | None:
         """Retourne la prochaine date de récupération planifiée."""
         try:
-            return self._calculate_next_refresh_datetime()
+            return self._as_local_aware(self._calculate_next_refresh_datetime())
         except Exception as err:
             _LOGGER.debug("Impossible de calculer la prochaine récupération: %s", err)
             return None
@@ -232,7 +243,7 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             next_refresh = self._calculate_next_refresh_datetime(next_refresh + timedelta(seconds=1))
             next_request = next_refresh - timedelta(hours=self._request_advance_hours)
 
-        return next_request
+        return self._as_local_aware(next_request)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Récupère les données du véhicule."""
