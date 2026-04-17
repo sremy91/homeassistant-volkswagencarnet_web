@@ -236,13 +236,14 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         try:
             state = await vehicle.get_state()
             dashboard = vehicle.dashboard()
-            images = await vehicle.get_images()
+            images_dict = await vehicle.get_images()
+            images_list = images_dict.get("images", []) if isinstance(images_dict, dict) else []
 
             return {
                 "vehicle": vehicle,
                 "state": state,
                 "dashboard": dashboard,
-                "images": images if isinstance(images, list) else [],
+                "images": images_list if isinstance(images_list, list) else [],
                 "timestamp": datetime.now(),
             }
         except Exception as err:
