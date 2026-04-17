@@ -20,8 +20,8 @@ into Home Assistant using the [`volkswagencarnet_web`](https://github.com/sremy9
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/sremy91/homeassistant-volkswagen_web.git
-   cd homeassistant-volkswagen_web
+  git clone https://github.com/sremy91/homeassistant-volkswagencarnet_web.git
+  cd homeassistant-volkswagencarnet_web
    ```
 
 2. Copy the `volkswagen_web` directory to your Home Assistant `custom_components` folder:
@@ -36,7 +36,7 @@ into Home Assistant using the [`volkswagencarnet_web`](https://github.com/sremy9
 With HACS:
 
 1. In Home Assistant, go to **Settings** → **Devices & Services** → **Custom Repositories**
-2. Add: `https://github.com/sremy91/homeassistant-volkswagen_web` (Type: Integration)
+2. Add: `https://github.com/sremy91/homeassistant-volkswagencarnet_web` (Type: Integration)
 3. Search for "Volkswagen Web FR" and install
 4. Restart Home Assistant
 
@@ -160,4 +160,4 @@ GPLv3 - See LICENSE file
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/sremy91/homeassistant-volkswagen_web/issues).
+For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/sremy91/homeassistant-volkswagencarnet_web/issues).
