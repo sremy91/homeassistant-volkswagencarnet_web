@@ -94,7 +94,9 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
     async def async_added_to_hass(self) -> None:
         """Appelé quand l'entité est ajoutée à HA: génère le token d'accès."""
         await super().async_added_to_hass()
-        await self.async_update_token()
+        # Génère un token d'accès initial pour les requêtes HTTP de l'image
+        import secrets
+        self.access_tokens.append(secrets.token_hex(32))
 
     @property
     def image_last_updated(self) -> datetime | None:
