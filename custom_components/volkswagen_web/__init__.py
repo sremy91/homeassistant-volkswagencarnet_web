@@ -58,9 +58,9 @@ class MJPEGStreamHandler(HomeAssistantView):
         """Initialise le gestionnaire."""
         self.hass = hass
 
-    async def get(self, request: web.Request) -> web.StreamResponse:
+    async def get(self, request: web.Request, vin: str) -> web.StreamResponse:
         """Gère les requêtes GET pour le stream MJPEG."""
-        vin = request.match_info.get("vin", "")
+        vin = vin or request.match_info.get("vin", "")
         
         # Récupère la caméra depuis le dictionnaire de caméras
         cameras_by_vin = self.hass.data.get(DOMAIN, {}).get("cameras_by_vin", {})
