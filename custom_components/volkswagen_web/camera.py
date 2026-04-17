@@ -12,7 +12,7 @@ from typing import Any, AsyncGenerator
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.network import NoURLAvailable, get_url
+from homeassistant.helpers.network import get_url
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -225,7 +225,7 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
                 base_url = get_url(self.hass, allow_ip=True, **kwargs)
                 if base_url:
                     break
-            except NoURLAvailable:
+            except Exception:
                 continue
 
         if not base_url:
