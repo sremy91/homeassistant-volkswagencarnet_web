@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -142,11 +143,23 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
 
         # Attributs directs sur VehicleState
         direct_attrs = {
-            "mileage_km", "last_report_timestamp", "model_name",
+            "mileage_km", "model_name",
             "data_timestamp",
         }
         if self._attr in direct_attrs:
             return getattr(state, self._attr, None)
+
+        # last_report_timestamp: data_timestamp parsé en datetime
+        if self._attr == "last_report_timestamp":
+            raw = getattr(state, "data_timestamp", None)
+            if not raw:
+                return None
+            if isinstance(raw, datetime):
+                return raw
+            try:
+                return datetime.fromisoformat(raw)
+            except (ValueError, TypeError):
+                return None
 
         # license_plate depuis le vehicle
         if self._attr == "license_plate":
