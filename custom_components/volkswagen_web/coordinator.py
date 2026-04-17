@@ -12,6 +12,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
+    CONF_EMAIL,
+    CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
     CONF_SCAN_INTERVAL,
@@ -55,6 +57,8 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         self._last_request_at: dict[str, datetime] = {}
         self._auto_request_enabled = config.get(CONF_AUTO_REQUEST_UPDATE, True)
         self._request_advance_hours = config.get(CONF_REQUEST_ADVANCE_HOURS, 1)
+        self._username = config.get(CONF_EMAIL)
+        self._password = config.get(CONF_PASSWORD)
 
         super().__init__(
             hass,
@@ -161,7 +165,13 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         try:
             # Assure que la connexion est authentifiée
             if not self.connection._session:
-                await self.connection.login()
+                await self.connection.__aenter__()
+                if not self._username or not self._password:
+                    raise UpdateFailed("Credentials manquants pour la reconnexion.")
+                await self.connection.login(
+                    username=self._username,
+                    password=self._password,
+                )
 
             # Récupère l'état pour chaque VIN
             data = {}

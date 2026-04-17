@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
 from volkswagencarnet_web import VolkswagenWebConnection
@@ -74,17 +72,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     try:
-        # Crée la connexion
-        connection = VolkswagenWebConnection(
-            email=entry.data[CONF_EMAIL],
+        # Crée la connexion et initialise la session HTTP persistante.
+        connection = VolkswagenWebConnection()
+        await connection.__aenter__()
+
+        # Authentifie la session avec les credentials de l'entry.
+        await connection.login(
+            username=entry.data[CONF_EMAIL],
             password=entry.data[CONF_PASSWORD],
         )
 
-        # Test la connexion
-        await connection.login()
-
         # Récupère les véhicules sélectionnés
-        all_vehicles = await connection.list_vehicles()
         selected_vins = entry.data.get(CONF_VEHICLES, [])
 
         if not selected_vins:
@@ -97,6 +95,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             connection=connection,
             vins=selected_vins,
             config={
+                CONF_EMAIL: entry.data.get(CONF_EMAIL),
+                CONF_PASSWORD: entry.data.get(CONF_PASSWORD),
                 CONF_SCAN_INTERVAL: entry.data.get(CONF_SCAN_INTERVAL),
                 CONF_SCAN_TIME: entry.data.get(CONF_SCAN_TIME),
                 CONF_SCAN_WEEKDAY: entry.data.get(CONF_SCAN_WEEKDAY),
@@ -140,7 +140,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        entry_data = hass.data[DOMAIN].pop(entry.entry_id)
+        connection = entry_data.get(DATA_VW_CONN)
+        if connection:
+            await connection.__aexit__(None, None, None)
 
     return unload_ok
 

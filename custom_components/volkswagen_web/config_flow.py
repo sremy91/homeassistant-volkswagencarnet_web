@@ -134,17 +134,16 @@ class VolkswagenWebConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             try:
-                connection = VolkswagenWebConnection(
-                    user_input[CONF_EMAIL],
-                    user_input[CONF_PASSWORD],
-                )
-                await connection.login()
-                vehicles = await connection.list_vehicles()
+                async with VolkswagenWebConnection() as connection:
+                    await connection.login(
+                        username=user_input[CONF_EMAIL],
+                        password=user_input[CONF_PASSWORD],
+                    )
+                    vehicles = await connection.list_vehicles()
 
                 if not vehicles:
                     errors["base"] = "no_vehicles"
                 else:
-                    self.vw_connection = connection
                     self.vw_vehicles = vehicles
                     self.auth_data = user_input
                     return await self.async_step_scan_settings()
