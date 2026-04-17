@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 from typing import Any
 
@@ -15,7 +16,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import VolkswagenWebCoordinator
@@ -110,6 +113,61 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": "Volkswagen",
             "model": self._get_model_name(),
         }
+
+    async def async_added_to_hass(self) -> None:
+        """Migre les entity_ids auto-générés vers des noms descriptifs."""
+        await super().async_added_to_hass()
+
+        # Récupère le registre d'entités
+        entity_registry = async_get(self.hass)
+        current_entity_id = self.entity_id
+
+        if not current_entity_id:
+            return
+
+        # Vérifie si l'entity_id courant a un suffixe numérique (ex: _11)
+        if not re.search(r"_\d+$", current_entity_id):
+            return
+
+        # Génère le nouvel entity_id descriptif
+        nickname = self.device_info.get("name", self._vin)
+        device_slug = slugify(nickname)
+        new_entity_id = f"sensor.{device_slug}_{self._attr}"
+
+        _LOGGER.debug(
+            "Migrating sensor %s → %s",
+            current_entity_id,
+            new_entity_id,
+        )
+
+        # Vérifie que le nouvel ID n'existe pas déjà
+        existing = entity_registry.async_get(new_entity_id)
+        if existing and existing.unique_id != self.unique_id:
+            _LOGGER.warning(
+                "Cannot migrate %s to %s: target exists with different unique_id",
+                current_entity_id,
+                new_entity_id,
+            )
+            return
+
+        # Effectue la migration
+        try:
+            entity_registry.async_update_entity(
+                current_entity_id,
+                new_entity_id=new_entity_id,
+            )
+            _LOGGER.info(
+                "Migrated sensor %s → %s",
+                current_entity_id,
+                new_entity_id,
+            )
+        except Exception as err:
+            _LOGGER.error(
+                "Failed to migrate sensor %s → %s: %s",
+                current_entity_id,
+                new_entity_id,
+                err,
+            )
 
     def _get_model_name(self) -> str | None:
         """Récupère le nom du modèle depuis le state."""

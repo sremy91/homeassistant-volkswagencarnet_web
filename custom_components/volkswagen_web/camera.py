@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
+import re
 import time as time_module
 from typing import Any, AsyncGenerator
 
@@ -12,7 +13,9 @@ from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import VolkswagenWebCoordinator
@@ -65,12 +68,51 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         self._streaming_task: asyncio.Task | None = None
 
     async def async_added_to_hass(self) -> None:
-        """Enregistre cette caméra dans le dictionnaire global."""
+        """Enregistre cette caméra dans le dictionnaire global et migre l'entity_id."""
         await super().async_added_to_hass()
         if "cameras_by_vin" not in self._hass.data[DOMAIN]:
             self._hass.data[DOMAIN]["cameras_by_vin"] = {}
         self._hass.data[DOMAIN]["cameras_by_vin"][self._vin] = self
         _LOGGER.debug("Camera registered for MJPEG streaming: %s", self._vin)
+
+        # Migre l'entity_id s'il a un suffixe numérique
+        entity_registry = async_get(self._hass)
+        current_entity_id = self.entity_id
+
+        if not current_entity_id or not re.search(r"_\d+$", current_entity_id):
+            return
+
+        # Génère le nouvel entity_id descriptif
+        nickname = self.device_info.get("name", self._vin)
+        device_slug = slugify(nickname)
+        new_entity_id = f"camera.{device_slug}_vehicle_images"
+
+        _LOGGER.debug("Migrating camera %s → %s", current_entity_id, new_entity_id)
+
+        # Vérifie que le nouvel ID n'existe pas déjà
+        existing = entity_registry.async_get(new_entity_id)
+        if existing and existing.unique_id != self.unique_id:
+            _LOGGER.warning(
+                "Cannot migrate %s to %s: target exists with different unique_id",
+                current_entity_id,
+                new_entity_id,
+            )
+            return
+
+        # Effectue la migration
+        try:
+            entity_registry.async_update_entity(
+                current_entity_id,
+                new_entity_id=new_entity_id,
+            )
+            _LOGGER.info("Migrated camera %s → %s", current_entity_id, new_entity_id)
+        except Exception as err:
+            _LOGGER.error(
+                "Failed to migrate camera %s → %s: %s",
+                current_entity_id,
+                new_entity_id,
+                err,
+            )
 
     @property
     def device_info(self) -> dict[str, Any]:
