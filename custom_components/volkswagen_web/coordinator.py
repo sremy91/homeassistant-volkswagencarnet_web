@@ -204,7 +204,7 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         
         Retourne un timedelta jusqu'au prochain moment de synchronisation.
         """
-        now = datetime.now()
+        now = datetime.now()  # Locale naive datetime pour les calculs internes
         next_refresh = self._calculate_next_refresh_datetime(now)
 
         # Calcule le temps avant le prochain refresh
@@ -232,15 +232,21 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             return None
 
         next_request = next_refresh - timedelta(hours=self._request_advance_hours)
-        now = datetime.now()
+        now = dt_util.now()  # datetime aware
 
         if next_request <= now:
-            next_refresh = self._calculate_next_refresh_datetime(now + timedelta(seconds=1))
+            # Passe un datetime naive à la méthode interne
+            next_refresh = self._as_local_aware(
+                self._calculate_next_refresh_datetime(now.replace(tzinfo=None) + timedelta(seconds=1))
+            )
             next_request = next_refresh - timedelta(hours=self._request_advance_hours)
 
         last_request = self._last_request_at.get(vin)
         if last_request and next_request <= last_request:
-            next_refresh = self._calculate_next_refresh_datetime(next_refresh + timedelta(seconds=1))
+            # Passe un datetime naive à la méthode interne
+            next_refresh = self._as_local_aware(
+                self._calculate_next_refresh_datetime(next_refresh.replace(tzinfo=None) + timedelta(seconds=1))
+            )
             next_request = next_refresh - timedelta(hours=self._request_advance_hours)
 
         return self._as_local_aware(next_request)
@@ -473,7 +479,7 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
 
             _LOGGER.info(f"Déclenchement manuel de request_update pour {vin}")
             result = await vehicle.request_new_report()
-            self._last_request_at[vin] = datetime.now()
+            self._last_request_at[vin] = dt_util.now()  # Stocke un datetime aware
             _LOGGER.debug("Réponse request_update manuel pour %s: %s", vin, result)
 
             # Programme une récupération différée après demande manuelle.
