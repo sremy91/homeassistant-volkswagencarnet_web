@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.components.http import HomeAssistantView
-from aiohttp import web
 
 from volkswagencarnet_web import VolkswagenWebConnection
 
@@ -47,52 +44,8 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 SERVICE_SCHEMA = vol.Schema({vol.Required("device_id"): cv.string})
 
 
-class MJPEGStreamHandler(HomeAssistantView):
-    """Gestionnaire pour les requêtes de stream MJPEG."""
-
-    url = "/api/volkswagen_web/mjpeg/{vin}"
-    name = "api:volkswagen_web:mjpeg"
-    requires_auth = False  # Pas d'auth requise pour le stream vidéo
-
-    def __init__(self, hass: HomeAssistant) -> None:
-        """Initialise le gestionnaire."""
-        self.hass = hass
-
-    async def get(self, request: web.Request, vin: str) -> web.StreamResponse:
-        """Gère les requêtes GET pour le stream MJPEG."""
-        vin = vin or request.match_info.get("vin", "")
-        
-        # Récupère la caméra depuis le dictionnaire de caméras
-        cameras_by_vin = self.hass.data.get(DOMAIN, {}).get("cameras_by_vin", {})
-        camera = cameras_by_vin.get(vin)
-
-        if not camera:
-            _LOGGER.warning("Camera MJPEG stream requested but not found for VIN: %s", vin)
-            return web.json_response(
-                {"error": "Camera not found"},
-                status=404,
-            )
-
-        # Prépare la réponse de streaming
-        response = web.StreamResponse()
-        response.content_type = "multipart/x-mixed-replace; boundary=--frame"
-        await response.prepare(request)
-
-        try:
-            async for chunk in camera.async_mjpeg_stream(request):
-                await response.write(chunk)
-                # Laisse respirer l'event loop
-                await asyncio.sleep(0)
-        except asyncio.CancelledError:
-            _LOGGER.debug("MJPEG stream cancelled for VIN: %s", vin)
-        except Exception as err:
-            _LOGGER.error("MJPEG stream error for VIN %s: %s", vin, err)
-
-        return response
-
-
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
-    """Setup du domaine — enregistre les services et les vues HTTP."""
+    """Setup du domaine — enregistre les services."""
     hass.data.setdefault(DOMAIN, {})
 
     async def handle_request_report(call) -> None:
@@ -115,9 +68,6 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         handle_request_report,
         schema=SERVICE_SCHEMA,
     )
-
-    # Enregistre la vue HTTP pour le streaming MJPEG
-    hass.http.register_view(MJPEGStreamHandler(hass))
 
     return True
 

@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
 import re
 import time as time_module
-from typing import Any, AsyncGenerator
+from typing import Any
 
-from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.network import get_url
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -45,7 +43,7 @@ async def async_setup_entry(
 
 
 class VolkswagenCamera(CoordinatorEntity, Camera):
-    """Caméra affichant les images extérieures du véhicule (VILMA) avec stream MJPEG."""
+    """Caméra affichant les images extérieures du véhicule (VILMA)."""
 
     def __init__(
         self,
@@ -62,11 +60,9 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         self._attr_translation_key = "vehicle_images"
         self._attr_icon = "mdi:image-multiple"
         self._attr_content_type = "image/jpeg"
-        # Stream MJPEG activé
-        self._attr_is_streaming = True
-        self._attr_supported_features = CameraEntityFeature.STREAM
-        self._attr_frame_interval = 1.0  # mis à jour par rotation_seconds
-        self._streaming_task: asyncio.Task | None = None
+        # Pas de stream temps réel: snapshot uniquement pour limiter les appels.
+        self._attr_is_streaming = False
+        self._attr_frame_interval = 60.0
 
     async def async_added_to_hass(self) -> None:
         """Enregistre cette caméra dans le dictionnaire global et migre l'entity_id."""
@@ -203,99 +199,6 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         except Exception as err:
             _LOGGER.error("Erreur décodage image VIN %s[%d]: %s", self._vin, index, err)
             return None
-
-    async def stream_source(self) -> str | None:
-        """Retourne l'URL du stream MJPEG personnalisé.
-        
-        Home Assistant s'attend à une async method.
-        """
-        # Le worker stream (ffmpeg) a besoin d'une URL HTTP absolue.
-        path = f"/api/{DOMAIN}/mjpeg/{self._vin}"
-        base_url: str | None = None
-
-        # Priorité à l'URL interne (la plus fiable pour ffmpeg côté HA),
-        # puis externe, puis URL auto.
-        url_candidates = (
-            {"prefer_internal": True},
-            {"prefer_external": True},
-            {"prefer_external": False},
-        )
-        for kwargs in url_candidates:
-            try:
-                base_url = get_url(self.hass, allow_ip=True, **kwargs)
-                if base_url:
-                    break
-            except Exception:
-                continue
-
-        if not base_url:
-            # Fallback ultime si HA n'a pas d'URL configurée.
-            base_url = "http://127.0.0.1:8123"
-
-        return f"{base_url.rstrip('/')}{path}"
-
-    async def async_mjpeg_stream(self, request) -> AsyncGenerator[bytes, None]:
-        """Génère un stream MJPEG continu des images en rotation.
-        
-        Le délai de rotation défini le rythme des frames.
-        """
-        rotation_seconds = max(1, int(self.coordinator.camera_rotation_seconds))
-        boundary = b"--frame"
-        
-        _LOGGER.debug(
-            "Camera stream starting for %s with rotation=%ss",
-            self._vin,
-            rotation_seconds,
-        )
-
-        try:
-            image_index = 0
-            while True:
-                # Récupère les données actuelles
-                vehicle_data = (self.coordinator.data or {}).get(self._vin)
-                if not vehicle_data:
-                    await asyncio.sleep(rotation_seconds)
-                    continue
-
-                images: list[dict[str, Any]] = vehicle_data.get("images") or []
-                if not images:
-                    await asyncio.sleep(rotation_seconds)
-                    continue
-
-                # Récupère l'image à l'index actuel
-                image_bytes = self._get_image_bytes(images, image_index % len(images))
-                
-                if image_bytes:
-                    # Formate en MJPEG
-                    frame = (
-                        boundary
-                        + b"\r\nContent-Type: image/jpeg\r\n"
-                        + f"Content-length: {len(image_bytes)}\r\n".encode()
-                        + b"\r\n"
-                        + image_bytes
-                        + b"\r\n"
-                    )
-                    
-                    yield frame
-                    
-                    _LOGGER.debug(
-                        "Camera stream %s: frame %d (%d bytes, rotation=%ss)",
-                        self._vin,
-                        image_index,
-                        len(image_bytes),
-                        rotation_seconds,
-                    )
-
-                # Avance au prochain frame après le délai de rotation
-                image_index += 1
-                await asyncio.sleep(rotation_seconds)
-
-        except asyncio.CancelledError:
-            _LOGGER.debug("Camera stream cancelled for %s", self._vin)
-            raise
-        except Exception as err:
-            _LOGGER.error("Camera stream error for %s: %s", self._vin, err)
-            raise
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
