@@ -34,6 +34,9 @@ from .coordinator import VolkswagenWebCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+# Configuration : supports config entries uniquement (pas de YAML)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 PLATFORMS = ["sensor", "button", "camera", "image"]
 
 
