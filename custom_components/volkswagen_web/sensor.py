@@ -196,6 +196,11 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
         # contracts: nombre de contrats actifs
         if self._attr == "contracts":
             contracts = state.contracts or []
+            _LOGGER.debug(
+                "Contracts sensor VIN %s render count=%d",
+                self._vin,
+                len(contracts),
+            )
             return f"{len(contracts)} contrat(s)"
 
         # service_partner: nom du partenaire
@@ -244,6 +249,11 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
 
         elif self._attr == "contracts":
             attrs["contracts_detail"] = state.contracts
+            _LOGGER.debug(
+                "Contracts sensor VIN %s attrs contracts_detail count=%d",
+                self._vin,
+                len(state.contracts or []),
+            )
 
         elif self._attr == "service_partner":
             attrs["partner_detail"] = state.service_partner

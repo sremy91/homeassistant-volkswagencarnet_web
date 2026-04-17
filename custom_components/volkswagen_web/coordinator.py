@@ -291,20 +291,63 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             # Compat: get_state() peut contenir contracts=[] si la librairie renvoie
             # un dict {overview, summary}. On recalcule la liste de contrats ici.
             contracts_count = len(getattr(state, "contracts", []) or [])
+            _LOGGER.debug(
+                "VIN %s contracts from get_state(): %d",
+                vin,
+                contracts_count,
+            )
             if contracts_count == 0:
                 contracts_payload = await vehicle.get_contracts()
                 contracts_list: list[Any] = []
+                _LOGGER.debug(
+                    "VIN %s contracts fallback payload type=%s",
+                    vin,
+                    type(contracts_payload).__name__,
+                )
                 if isinstance(contracts_payload, list):
                     contracts_list = contracts_payload
+                    _LOGGER.debug(
+                        "VIN %s contracts fallback from list: %d",
+                        vin,
+                        len(contracts_list),
+                    )
                 elif isinstance(contracts_payload, dict):
+                    _LOGGER.debug(
+                        "VIN %s contracts fallback payload keys=%s",
+                        vin,
+                        sorted(contracts_payload.keys()),
+                    )
                     if isinstance(contracts_payload.get("contracts"), list):
                         contracts_list = contracts_payload.get("contracts") or []
+                        _LOGGER.debug(
+                            "VIN %s contracts fallback from dict.contracts: %d",
+                            vin,
+                            len(contracts_list),
+                        )
                     else:
                         summary = contracts_payload.get("summary")
                         if isinstance(summary, dict) and isinstance(summary.get("contracts"), list):
                             contracts_list = summary.get("contracts") or []
+                            _LOGGER.debug(
+                                "VIN %s contracts fallback from dict.summary.contracts: %d",
+                                vin,
+                                len(contracts_list),
+                            )
                 state.contracts = contracts_list
                 contracts_count = len(contracts_list)
+
+            if contracts_count:
+                first_contract = (state.contracts or [None])[0]
+                if isinstance(first_contract, dict):
+                    _LOGGER.debug(
+                        "VIN %s first contract keys=%s status=%s name=%s",
+                        vin,
+                        sorted(first_contract.keys()),
+                        first_contract.get("status") or first_contract.get("contract_status"),
+                        first_contract.get("name") or first_contract.get("name_display_fr"),
+                    )
+            else:
+                _LOGGER.debug("VIN %s contracts resolved to 0 after fallback", vin)
 
             _LOGGER.debug(
                 "VIN %s fetched: images=%d history_cached=%s contracts=%d",
