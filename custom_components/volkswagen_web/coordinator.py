@@ -82,6 +82,7 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         update_interval = self._calculate_next_update_interval()
 
         self._last_request_at: dict[str, datetime] = {}
+        self._auto_request_retry_not_before: dict[str, datetime] = {}
         self._pending_manual_refresh: dict[str, asyncio.TimerHandle] = {}
         self._history_cache: dict[str, dict[str, Any]] = {}
         self._auto_request_enabled = _to_bool_or_default(
@@ -267,11 +268,15 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
                     password=self._password,
                 )
 
+            # Récupère la liste des véhicules une seule fois par cycle.
+            vehicles = await self.connection.list_vehicles()
+            vehicles_by_vin = {v.vin: v for v in vehicles}
+
             # Récupère l'état pour chaque VIN
             data = {}
             tasks = []
             for vin in self.vins:
-                tasks.append(self._fetch_vehicle_data(vin))
+                tasks.append(self._fetch_vehicle_data(vin, vehicles_by_vin.get(vin)))
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -291,11 +296,8 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         except Exception as err:
             raise UpdateFailed(f"Erreur lors de la mise à jour: {err}") from err
 
-    async def _fetch_vehicle_data(self, vin: str) -> dict[str, Any]:
+    async def _fetch_vehicle_data(self, vin: str, vehicle: Any | None) -> dict[str, Any]:
         """Récupère les données pour un véhicule spécifique."""
-        vehicles = await self.connection.list_vehicles()
-        vehicle = next((v for v in vehicles if v.vin == vin), None)
-
         if not vehicle:
             _LOGGER.warning(f"Véhicule VIN {vin} non trouvé.")
             return None
@@ -442,32 +444,52 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         - Chaque 15 min (interne), vérifie si on doit déclencher en avance
         - Si delai >= advance_hours, déclenche vehicle.request_new_report()
         """
-        now = datetime.now()
+        now = dt_util.now()
+        vehicles = await self.connection.list_vehicles()
+        vehicles_by_vin = {v.vin: v for v in vehicles}
 
         for vin in self.vins:
-            last_request = self._last_request_at.get(vin, datetime.min)
-            time_since_last_request = now - last_request
+            next_request_at = self.get_next_request_at(vin)
+            if not next_request_at or now < next_request_at:
+                continue
 
-            # Vérifie si assez de temps est passé depuis le dernier request
-            # Pour éviter les spam, on attend au moins advance_hours entre appels
-            if time_since_last_request >= timedelta(hours=self._request_advance_hours):
-                try:
-                    vehicles = await self.connection.list_vehicles()
-                    vehicle = next((v for v in vehicles if v.vin == vin), None)
+            retry_not_before = self._auto_request_retry_not_before.get(vin)
+            if retry_not_before and now < retry_not_before:
+                _LOGGER.debug(
+                    "Auto request ignoré pour %s jusqu'à %s (backoff 429)",
+                    vin,
+                    retry_not_before,
+                )
+                continue
 
-                    if vehicle:
-                        _LOGGER.debug(
-                            f"Déclenchement auto de request_update pour {vin} "
-                            f"(délai avance: {self._request_advance_hours}h)"
-                        )
-                        result = await vehicle.request_new_report()
-                        self._last_request_at[vin] = now
-                        _LOGGER.debug(f"Request update déclenché: {result}")
+            vehicle = vehicles_by_vin.get(vin)
+            if not vehicle:
+                continue
 
-                        # Force un refresh du coordinateur
-                        await self.async_request_refresh()
+            try:
+                _LOGGER.debug(
+                    "Déclenchement auto de request_update pour %s (prévu à %s)",
+                    vin,
+                    next_request_at,
+                )
+                result = await vehicle.request_new_report()
+                self._last_request_at[vin] = now
+                self._auto_request_retry_not_before.pop(vin, None)
+                _LOGGER.debug("Request update auto déclenché pour %s: %s", vin, result)
 
-                except Exception as err:
+                # Pas de refresh immédiat ici: les données seront récupérées au scan planifié.
+            except Exception as err:
+                err_str = str(err)
+                if "429" in err_str:
+                    backoff_until = now + timedelta(hours=1)
+                    self._auto_request_retry_not_before[vin] = backoff_until
+                    _LOGGER.warning(
+                        "Auto request rate-limited pour %s, pause jusqu'à %s: %s",
+                        vin,
+                        backoff_until,
+                        err,
+                    )
+                else:
                     _LOGGER.error(f"Erreur lors du request_update auto pour {vin}: {err}")
 
     async def async_request_report_manual(self, vin: str) -> bool:
