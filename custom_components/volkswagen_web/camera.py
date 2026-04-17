@@ -203,27 +203,12 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
             _LOGGER.error("Erreur décodage image VIN %s[%d]: %s", self._vin, index, err)
             return None
 
-    async def stream_source(self) -> str | None:
+    @property
+    def stream_source(self) -> str | None:
         """Retourne l'URL du stream MJPEG personnalisé."""
         # Construit l'URL du stream basée sur le VIN
         # Exemple: /api/volkswagen_web/mjpeg/{vin}
         return f"/api/{DOMAIN}/mjpeg/{self._vin}"
-
-    @property
-    def stream_source(self) -> str | None:
-        """Retourne l'URL du stream MJPEG (property version)."""
-        return f"/api/{DOMAIN}/mjpeg/{self._vin}"
-
-    async def async_get_stream_source(self) -> str | None:
-        """Retourne None pour indiquer un stream personnalisé."""
-        return None
-
-    async def async_handle_web_request(
-        self, request, prefix: str | None = None
-    ) -> None:
-        """Stream MJPEG personnalisé."""
-        # Cette méthode est appelée par Home Assistant quand un client accède au stream
-        pass
 
     async def async_mjpeg_stream(self, request) -> AsyncGenerator[bytes, None]:
         """Génère un stream MJPEG continu des images en rotation.
