@@ -88,6 +88,12 @@
       "vin": {
         "name": "VIN Number"
       },
+      "next_scheduled_request": {
+        "name": "Next scheduled report request"
+      },
+      "next_scheduled_refresh": {
+        "name": "Next scheduled refresh"
+      },
       "mileage_km": {
         "name": "Mileage"
       },

@@ -25,6 +25,8 @@ _LOGGER = logging.getLogger(__name__)
 # (attr, device_class, state_class, unit, entity_category, icon)
 SENSOR_DESCRIPTIONS: list[tuple[str, str | None, str | None, str | None, str | None, str | None]] = [
     ("vin",                   None,                         None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:identifier"),
+    ("next_scheduled_request", SensorDeviceClass.TIMESTAMP, None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:clock-start"),
+    ("next_scheduled_refresh", SensorDeviceClass.TIMESTAMP, None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:clock-end"),
     ("mileage_km",            SensorDeviceClass.DISTANCE,   SensorStateClass.TOTAL_INCREASING, "km",  None,                         "mdi:counter"),
     ("last_report_timestamp", SensorDeviceClass.TIMESTAMP,  None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:clock-outline"),
     ("model_name",            None,                         None,                              None,  EntityCategory.DIAGNOSTIC,    "mdi:car-info"),
@@ -137,6 +139,13 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
         if self._attr == "vin":
             return self._vin
 
+        # Planification prochaine demande / récupération
+        if self._attr == "next_scheduled_request":
+            return self.coordinator.get_next_request_at(self._vin)
+
+        if self._attr == "next_scheduled_refresh":
+            return self.coordinator.get_next_refresh_at()
+
         state = vehicle_data.get("state")
         if not state:
             return None
@@ -210,6 +219,18 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
             return {}
 
         attrs: dict[str, Any] = {"vin": self._vin}
+
+        if self._attr in {"next_scheduled_request", "next_scheduled_refresh"}:
+            attrs["scan_interval"] = self.coordinator.scan_interval_key
+            attrs["scan_time"] = self.coordinator.scan_time_str
+            attrs["scan_weekday"] = self.coordinator.scan_weekday
+            attrs["scan_day_of_month"] = self.coordinator.scan_day_of_month
+            attrs["auto_request_update"] = self.coordinator._auto_request_enabled
+            attrs["request_advance_hours"] = self.coordinator._request_advance_hours
+            attrs["next_scheduled_refresh"] = self.coordinator.get_next_refresh_at()
+            if self._attr == "next_scheduled_request":
+                attrs["next_scheduled_request"] = self.coordinator.get_next_request_at(self._vin)
+            return attrs
 
         if self._attr == "vehicle_status":
             attrs["systems"] = state.systems

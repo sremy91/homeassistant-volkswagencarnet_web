@@ -109,67 +109,55 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             _LOGGER.warning(f"Format d'heure invalide: {self.scan_time_str}, utilise 10:00 par défaut")
             return time(hour=10, minute=0)
 
-    def _calculate_next_update_interval(self) -> timedelta:
-        """Calcule l'intervalle jusqu'au prochain refresh basé sur le schedule.
-        
-        Retourne un timedelta jusqu'au prochain moment de synchronisation.
-        """
-        now = datetime.now()
+    def _calculate_next_refresh_datetime(self, now: datetime | None = None) -> datetime:
+        """Calcule la prochaine date de synchronisation."""
+        now = now or datetime.now()
         scan_time = self._parse_scan_time()
 
         if self.scan_interval_key == SCAN_INTERVAL_DAILY:
-            # Prochain refresh: aujourd'hui à scan_time (ou demain si l'heure est passée)
             next_refresh = datetime.combine(now.date(), scan_time)
             if next_refresh <= now:
                 next_refresh += timedelta(days=1)
 
         elif self.scan_interval_key == SCAN_INTERVAL_WEEKLY:
-            # Prochain refresh: ce jour de la semaine à scan_time (ou la semaine prochaine)
             days_ahead = (self.scan_weekday - now.weekday()) % 7
             if days_ahead == 0:
-                # C'est ce jour - vérifie l'heure
                 next_refresh = datetime.combine(now.date(), scan_time)
                 if next_refresh <= now:
                     days_ahead = 7
-                else:
                     next_refresh = datetime.combine((now + timedelta(days=days_ahead)).date(), scan_time)
             else:
                 next_refresh = datetime.combine((now + timedelta(days=days_ahead)).date(), scan_time)
 
         elif self.scan_interval_key == SCAN_INTERVAL_BIWEEKLY:
-            # Calcule le prochain cycle de 14 jours
-            # Référence: premier jour du scan à l'époque Unix
-            reference_date = datetime(2024, 1, 1)  # Jour de référence
+            reference_date = datetime(2024, 1, 1)
             days_since_ref = (now.date() - reference_date.date()).days
             days_into_cycle = days_since_ref % 14
             days_until_next_cycle = (14 - days_into_cycle) % 14
 
-            if days_until_next_cycle == 0:
-                # C'est aujourd'hui - vérifie l'heure
-                next_refresh = datetime.combine(now.date(), scan_time)
-                if next_refresh <= now:
-                    days_until_next_cycle = 14
-
             next_refresh = datetime.combine(
-                (now + timedelta(days=days_until_next_cycle)).date(), scan_time
+                (now + timedelta(days=days_until_next_cycle)).date(),
+                scan_time,
             )
+            if next_refresh <= now:
+                next_refresh = datetime.combine(
+                    (now + timedelta(days=14)).date(),
+                    scan_time,
+                )
 
         elif self.scan_interval_key == SCAN_INTERVAL_MONTHLY:
-            # Prochain refresh: ce jour du mois à scan_time
             try:
                 next_refresh = datetime.combine(
                     datetime(now.year, now.month, min(self.scan_day_of_month, 28)).date(),
                     scan_time,
                 )
             except ValueError:
-                # Jour invalide pour ce mois (ex: 31 février)
                 next_refresh = datetime.combine(
                     datetime(now.year, now.month, 1).date(),
                     scan_time,
                 )
 
             if next_refresh <= now:
-                # Mois prochain
                 next_month = now.replace(day=1) + timedelta(days=32)
                 try:
                     next_refresh = datetime.combine(
@@ -183,8 +171,17 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
                     )
 
         else:
-            # Fallback: demain à scan_time
             next_refresh = datetime.combine((now + timedelta(days=1)).date(), scan_time)
+
+        return next_refresh
+
+    def _calculate_next_update_interval(self) -> timedelta:
+        """Calcule l'intervalle jusqu'au prochain refresh basé sur le schedule.
+        
+        Retourne un timedelta jusqu'au prochain moment de synchronisation.
+        """
+        now = datetime.now()
+        next_refresh = self._calculate_next_refresh_datetime(now)
 
         # Calcule le temps avant le prochain refresh
         time_until_refresh = next_refresh - now
@@ -192,6 +189,37 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
 
         # Min 1 min, max paramétré par l'intervalle
         return max(time_until_refresh, timedelta(minutes=1))
+
+    def get_next_refresh_at(self) -> datetime | None:
+        """Retourne la prochaine date de récupération planifiée."""
+        try:
+            return self._calculate_next_refresh_datetime()
+        except Exception as err:
+            _LOGGER.debug("Impossible de calculer la prochaine récupération: %s", err)
+            return None
+
+    def get_next_request_at(self, vin: str) -> datetime | None:
+        """Retourne la prochaine date de demande automatique de rapport."""
+        if not self._auto_request_enabled:
+            return None
+
+        next_refresh = self.get_next_refresh_at()
+        if not next_refresh:
+            return None
+
+        next_request = next_refresh - timedelta(hours=self._request_advance_hours)
+        now = datetime.now()
+
+        if next_request <= now:
+            next_refresh = self._calculate_next_refresh_datetime(now + timedelta(seconds=1))
+            next_request = next_refresh - timedelta(hours=self._request_advance_hours)
+
+        last_request = self._last_request_at.get(vin)
+        if last_request and next_request <= last_request:
+            next_refresh = self._calculate_next_refresh_datetime(next_refresh + timedelta(seconds=1))
+            next_request = next_refresh - timedelta(hours=self._request_advance_hours)
+
+        return next_request
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Récupère les données du véhicule."""

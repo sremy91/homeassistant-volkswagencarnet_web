@@ -55,6 +55,14 @@ def _make_coordinator(vin: str = "WVWTEST0000000001") -> MagicMock:
     coordinator = MagicMock()
     coordinator.vins = [vin]
     coordinator.last_update_success = True
+    coordinator.get_next_request_at = MagicMock(return_value=datetime(2026, 4, 18, 9, 0, 0))
+    coordinator.get_next_refresh_at = MagicMock(return_value=datetime(2026, 4, 18, 10, 0, 0))
+    coordinator.scan_interval_key = "daily"
+    coordinator.scan_time_str = "10:00"
+    coordinator.scan_weekday = 0
+    coordinator.scan_day_of_month = 1
+    coordinator._auto_request_enabled = True
+    coordinator._request_advance_hours = 1
     coordinator.data = {
         vin: {
             "vehicle": vehicle,
@@ -69,8 +77,8 @@ def _make_coordinator(vin: str = "WVWTEST0000000001") -> MagicMock:
 # ── Tests SENSOR_DESCRIPTIONS ────────────────────────────────────────────────
 
 def test_sensor_descriptions_count():
-    """15 sensors doivent être définis."""
-    assert len(SENSOR_DESCRIPTIONS) == 15
+    """17 sensors doivent être définis."""
+    assert len(SENSOR_DESCRIPTIONS) == 17
 
 
 def test_sensor_descriptions_structure():
@@ -83,6 +91,8 @@ def test_sensor_descriptions_structure():
 
 @pytest.mark.parametrize("attr,expected", [
     ("vin", "WVWTEST0000000001"),
+    ("next_scheduled_request", datetime(2026, 4, 18, 9, 0, 0)),
+    ("next_scheduled_refresh", datetime(2026, 4, 18, 10, 0, 0)),
     ("mileage_km", 42000),
     ("model_name", "Golf 8 1.5 eTSI"),
     ("license_plate", "AA-123-AA"),

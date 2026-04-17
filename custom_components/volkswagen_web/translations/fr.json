@@ -88,6 +88,12 @@
       "vin": {
         "name": "Numéro VIN"
       },
+      "next_scheduled_request": {
+        "name": "Prochaine demande de rapport"
+      },
+      "next_scheduled_refresh": {
+        "name": "Prochaine récupération"
+      },
       "mileage_km": {
         "name": "Kilométrage"
       },
