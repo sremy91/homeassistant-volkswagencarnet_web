@@ -12,6 +12,7 @@ from typing import Any, AsyncGenerator
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.network import get_url
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -208,9 +209,14 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         
         Home Assistant s'attend à une async method.
         """
-        # Construit l'URL du stream basée sur le VIN
-        # Exemple: /api/volkswagen_web/mjpeg/{vin}
-        return f"/api/{DOMAIN}/mjpeg/{self._vin}"
+        # Le worker stream (ffmpeg) a besoin d'une URL HTTP absolue.
+        path = f"/api/{DOMAIN}/mjpeg/{self._vin}"
+        try:
+            base_url = get_url(self.hass, prefer_external=False)
+        except Exception:
+            base_url = "http://127.0.0.1:8123"
+
+        return f"{base_url.rstrip('/')}{path}"
 
     async def async_mjpeg_stream(self, request) -> AsyncGenerator[bytes, None]:
         """Génère un stream MJPEG continu des images en rotation.
