@@ -100,9 +100,18 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
 
         # Première image disponible
         first = images[0]
-        image_data = first.get("image_data") or first.get("data")
+        image_data = (
+            first.get("image_data")
+            or first.get("data")
+            or first.get("base64")
+            or first.get("b64")
+        )
         if not image_data:
-            _LOGGER.debug("Camera fetch %s: first image missing image_data/data", self._vin)
+            _LOGGER.debug(
+                "Camera fetch %s: first image missing payload key (known keys=%s)",
+                self._vin,
+                sorted(first.keys()),
+            )
             return None
 
         try:
@@ -126,8 +135,8 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
             "vin": self._vin,
             "image_count": len(images),
             "image_urls": [
-                img.get("url") or img.get("imageUrl")
+                img.get("url") or img.get("imageUrl") or img.get("source_url")
                 for img in images
-                if img.get("url") or img.get("imageUrl")
+                if img.get("url") or img.get("imageUrl") or img.get("source_url")
             ],
         }

@@ -244,19 +244,53 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             dashboard = vehicle.dashboard()
             images_dict = await vehicle.get_images()
             images_list = images_dict.get("images", []) if isinstance(images_dict, dict) else []
+            normalized_images: list[dict[str, Any]] = []
+            if isinstance(images_list, list):
+                for item in images_list:
+                    if not isinstance(item, dict):
+                        continue
+                    normalized = dict(item)
+                    # Le backend web renvoie actuellement {base64, source_url, content_type}.
+                    # On ajoute les alias historiques consommés par l'intégration.
+                    if "image_data" not in normalized and "base64" in normalized:
+                        normalized["image_data"] = normalized.get("base64")
+                    if "data" not in normalized and "base64" in normalized:
+                        normalized["data"] = normalized.get("base64")
+                    if "url" not in normalized and "source_url" in normalized:
+                        normalized["url"] = normalized.get("source_url")
+                    normalized_images.append(normalized)
+
+            # Compat: get_state() peut contenir contracts=[] si la librairie renvoie
+            # un dict {overview, summary}. On recalcule la liste de contrats ici.
+            contracts_count = len(getattr(state, "contracts", []) or [])
+            if contracts_count == 0:
+                contracts_payload = await vehicle.get_contracts()
+                contracts_list: list[Any] = []
+                if isinstance(contracts_payload, list):
+                    contracts_list = contracts_payload
+                elif isinstance(contracts_payload, dict):
+                    if isinstance(contracts_payload.get("contracts"), list):
+                        contracts_list = contracts_payload.get("contracts") or []
+                    else:
+                        summary = contracts_payload.get("summary")
+                        if isinstance(summary, dict) and isinstance(summary.get("contracts"), list):
+                            contracts_list = summary.get("contracts") or []
+                state.contracts = contracts_list
+                contracts_count = len(contracts_list)
+
             _LOGGER.debug(
                 "VIN %s fetched: images=%d history_cached=%s contracts=%d",
                 vin,
-                len(images_list) if isinstance(images_list, list) else 0,
+                len(normalized_images),
                 vin in self._history_cache,
-                len(getattr(state, "contracts", []) or []),
+                contracts_count,
             )
 
             return {
                 "vehicle": vehicle,
                 "state": state,
                 "dashboard": dashboard,
-                "images": images_list if isinstance(images_list, list) else [],
+                "images": normalized_images,
                 "history": self._history_cache.get(vin),
                 "timestamp": datetime.now(),
             }

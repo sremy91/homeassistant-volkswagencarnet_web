@@ -142,9 +142,19 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
             return None
 
         image_dict = images[self._image_index]
-        image_data = image_dict.get("image_data") or image_dict.get("data")
+        image_data = (
+            image_dict.get("image_data")
+            or image_dict.get("data")
+            or image_dict.get("base64")
+            or image_dict.get("b64")
+        )
         if not image_data:
-            _LOGGER.debug("Image fetch VIN %s[%d]: missing image_data/data key", self._vin, self._image_index)
+            _LOGGER.debug(
+                "Image fetch VIN %s[%d]: missing payload key (known keys=%s)",
+                self._vin,
+                self._image_index,
+                sorted(image_dict.keys()),
+            )
             return None
 
         try:
@@ -182,7 +192,7 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         
         if self._image_index < len(images):
             image_dict = images[self._image_index]
-            if url := image_dict.get("url") or image_dict.get("imageUrl"):
+            if url := image_dict.get("url") or image_dict.get("imageUrl") or image_dict.get("source_url"):
                 attrs["url"] = url
         
         return attrs
