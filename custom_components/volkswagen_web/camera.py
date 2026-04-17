@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import logging
 import time as time_module
-from typing import Any
+from typing import Any, AsyncGenerator
 
-from homeassistant.components.camera import Camera
+from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -27,8 +28,12 @@ async def async_setup_entry(
     """Crée les entités camera."""
     coordinator: VolkswagenWebCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
+    # Initialise le dictionnaire de caméras par VIN si nécessaire
+    if "cameras_by_vin" not in hass.data[DOMAIN]:
+        hass.data[DOMAIN]["cameras_by_vin"] = {}
+
     entities = [
-        VolkswagenCamera(coordinator=coordinator, vin=vin)
+        VolkswagenCamera(coordinator=coordinator, vin=vin, hass=hass)
         for vin in coordinator.vins
     ]
     _LOGGER.debug("Adding %d camera entity(ies)", len(entities))
@@ -36,24 +41,36 @@ async def async_setup_entry(
 
 
 class VolkswagenCamera(CoordinatorEntity, Camera):
-    """Caméra affichant les images extérieures du véhicule (VILMA)."""
+    """Caméra affichant les images extérieures du véhicule (VILMA) avec stream MJPEG."""
 
     def __init__(
         self,
         coordinator: VolkswagenWebCoordinator,
         vin: str,
+        hass: HomeAssistant,
     ) -> None:
         CoordinatorEntity.__init__(self, coordinator)
         Camera.__init__(self)
         self._vin = vin
+        self._hass = hass
         self._attr_has_entity_name = True
         self._attr_unique_id = f"{vin}-camera-vehicle_images"
         self._attr_translation_key = "vehicle_images"
         self._attr_icon = "mdi:image-multiple"
         self._attr_content_type = "image/jpeg"
-        # Pas de streaming live: lecture seule
-        self._attr_is_streaming = False
-        self._attr_frame_interval = 60.0  # secondes entre rafraîchissements UI
+        # Stream MJPEG activé
+        self._attr_is_streaming = True
+        self._attr_supported_features = CameraEntityFeature.STREAM
+        self._attr_frame_interval = 1.0  # mis à jour par rotation_seconds
+        self._streaming_task: asyncio.Task | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Enregistre cette caméra dans le dictionnaire global."""
+        await super().async_added_to_hass()
+        if "cameras_by_vin" not in self._hass.data[DOMAIN]:
+            self._hass.data[DOMAIN]["cameras_by_vin"] = {}
+        self._hass.data[DOMAIN]["cameras_by_vin"][self._vin] = self
+        _LOGGER.debug("Camera registered for MJPEG streaming: %s", self._vin)
 
     @property
     def device_info(self) -> dict[str, Any]:
@@ -102,7 +119,16 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         rotation_seconds = max(1, int(self.coordinator.camera_rotation_seconds))
         current_index = (int(time_module.time()) // rotation_seconds) % len(images)
 
-        current = images[current_index]
+        return self._get_image_bytes(images, current_index)
+
+    def _get_image_bytes(
+        self, images: list[dict[str, Any]], index: int
+    ) -> bytes | None:
+        """Extrait et décode une image par son index."""
+        if not images or index >= len(images):
+            return None
+
+        current = images[index]
         image_data = (
             current.get("image_data")
             or current.get("data")
@@ -113,7 +139,7 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
             _LOGGER.debug(
                 "Camera fetch %s: image[%d] missing payload key (known keys=%s)",
                 self._vin,
-                current_index,
+                index,
                 sorted(current.keys()),
             )
             return None
@@ -125,16 +151,100 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
             else:
                 image_bytes = image_data
             _LOGGER.debug(
-                "Camera fetch %s: image[%d] decoded %d bytes (rotation=%ss)",
+                "Camera fetch %s: image[%d] decoded %d bytes",
                 self._vin,
-                current_index,
+                index,
                 len(image_bytes),
-                rotation_seconds,
             )
             return image_bytes
         except Exception as err:
-            _LOGGER.error("Erreur décodage image VIN %s: %s", self._vin, err)
+            _LOGGER.error("Erreur décodage image VIN %s[%d]: %s", self._vin, index, err)
             return None
+
+    async def stream_source(self) -> str | None:
+        """Retourne l'URL du stream MJPEG personnalisé."""
+        # Construit l'URL du stream basée sur le VIN
+        # Exemple: /api/volkswagen_web/mjpeg/{vin}
+        return f"/api/{DOMAIN}/mjpeg/{self._vin}"
+
+    @property
+    def stream_source(self) -> str | None:
+        """Retourne l'URL du stream MJPEG (property version)."""
+        return f"/api/{DOMAIN}/mjpeg/{self._vin}"
+
+    async def async_get_stream_source(self) -> str | None:
+        """Retourne None pour indiquer un stream personnalisé."""
+        return None
+
+    async def async_handle_web_request(
+        self, request, prefix: str | None = None
+    ) -> None:
+        """Stream MJPEG personnalisé."""
+        # Cette méthode est appelée par Home Assistant quand un client accède au stream
+        pass
+
+    async def async_mjpeg_stream(self, request) -> AsyncGenerator[bytes, None]:
+        """Génère un stream MJPEG continu des images en rotation.
+        
+        Le délai de rotation défini le rythme des frames.
+        """
+        rotation_seconds = max(1, int(self.coordinator.camera_rotation_seconds))
+        boundary = b"--frame"
+        
+        _LOGGER.debug(
+            "Camera stream starting for %s with rotation=%ss",
+            self._vin,
+            rotation_seconds,
+        )
+
+        try:
+            image_index = 0
+            while True:
+                # Récupère les données actuelles
+                vehicle_data = (self.coordinator.data or {}).get(self._vin)
+                if not vehicle_data:
+                    await asyncio.sleep(rotation_seconds)
+                    continue
+
+                images: list[dict[str, Any]] = vehicle_data.get("images") or []
+                if not images:
+                    await asyncio.sleep(rotation_seconds)
+                    continue
+
+                # Récupère l'image à l'index actuel
+                image_bytes = self._get_image_bytes(images, image_index % len(images))
+                
+                if image_bytes:
+                    # Formate en MJPEG
+                    frame = (
+                        boundary
+                        + b"\r\nContent-Type: image/jpeg\r\n"
+                        + f"Content-length: {len(image_bytes)}\r\n".encode()
+                        + b"\r\n"
+                        + image_bytes
+                        + b"\r\n"
+                    )
+                    
+                    yield frame
+                    
+                    _LOGGER.debug(
+                        "Camera stream %s: frame %d (%d bytes, rotation=%ss)",
+                        self._vin,
+                        image_index,
+                        len(image_bytes),
+                        rotation_seconds,
+                    )
+
+                # Avance au prochain frame après le délai de rotation
+                image_index += 1
+                await asyncio.sleep(rotation_seconds)
+
+        except asyncio.CancelledError:
+            _LOGGER.debug("Camera stream cancelled for %s", self._vin)
+            raise
+        except Exception as err:
+            _LOGGER.error("Camera stream error for %s: %s", self._vin, err)
+            raise
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -154,3 +264,4 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
                 if img.get("url") or img.get("imageUrl") or img.get("source_url")
             ],
         }
+
