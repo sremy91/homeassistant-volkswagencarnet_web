@@ -1,0 +1,134 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Volkswagen Web",
+        "description": "Set up your Volkswagen France portal connection",
+        "data": {
+          "email": "Email address",
+          "password": "Password",
+          "name": "Name (optional)"
+        }
+      },
+      "scan_settings": {
+        "title": "Synchronization interval",
+        "description": "Choose how often your vehicle data is updated",
+        "data": {
+          "scan_interval": "Frequency"
+        }
+      },
+      "schedule_time": {
+        "title": "Synchronization schedule",
+        "description": "Set the time and day for synchronization",
+        "data": {
+          "scan_time": "Time (HH:MM)",
+          "scan_weekday": "Day of week",
+          "scan_day_of_month": "Day of month"
+        }
+      },
+      "vehicles": {
+        "title": "Select vehicles",
+        "description": "Choose which vehicles to integrate into Home Assistant"
+      }
+    },
+    "error": {
+      "invalid_auth": "Authentication failed. Please check your email and password.",
+      "cannot_connect": "Unable to connect. Please check your network connection.",
+      "unknown": "Unknown error during configuration."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "no_vehicles_selected": "No vehicles selected"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Volkswagen Web Options",
+        "data": {
+          "scan_interval": "Synchronization frequency",
+          "auto_request_update": "Automatically request vehicle updates",
+          "request_advance_hours": "Hours before to trigger request"
+        }
+      },
+      "schedule_options": {
+        "title": "Synchronization schedule",
+        "data": {
+          "scan_time": "Time (HH:MM)",
+          "scan_weekday": "Day of week",
+          "scan_day_of_month": "Day of month",
+          "auto_request_update": "Automatically request vehicle updates",
+          "request_advance_hours": "Hours before to trigger request"
+        }
+      }
+    }
+  },
+  "services": {
+    "request_vehicle_report": {
+      "name": "Request vehicle health report",
+      "description": "Request a new vehicle health report",
+      "fields": {
+        "device_id": {
+          "name": "Vehicle",
+          "description": "The vehicle to request the report for"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mileage_km": {
+        "name": "Mileage"
+      },
+      "last_report_timestamp": {
+        "name": "Last report"
+      },
+      "model_name": {
+        "name": "Model"
+      },
+      "license_plate": {
+        "name": "License plate"
+      },
+      "vehicle_status": {
+        "name": "Vehicle status"
+      },
+      "status_freins": {
+        "name": "Brake status"
+      },
+      "status_pneus": {
+        "name": "Tyre status"
+      },
+      "status_transmission": {
+        "name": "Transmission status"
+      },
+      "status_feux_de_route": {
+        "name": "Lighting status"
+      },
+      "status_assistants": {
+        "name": "Assistants status"
+      },
+      "status_confort": {
+        "name": "Comfort status"
+      },
+      "warninglights_last": {
+        "name": "Latest diagnostics"
+      },
+      "contracts": {
+        "name": "Contracts"
+      },
+      "service_partner": {
+        "name": "Service partner"
+      }
+    },
+    "button": {
+      "request_update": {
+        "name": "Request health report"
+      }
+    },
+    "camera": {
+      "vehicle_images": {
+        "name": "Vehicle images"
+      }
+    }
+  }
+}

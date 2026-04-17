@@ -1,0 +1,11 @@
+{
+  "domain": "volkswagen_web",
+  "name": "Volkswagen Web FR",
+  "codeowners": ["@sremy91"],
+  "config_flow": true,
+  "documentation": "https://github.com/sremy91/homeassistant-volkswagen_web",
+  "issue_tracker": "https://github.com/sremy91/homeassistant-volkswagen_web/issues",
+  "requirements": ["volkswagencarnet_web>=0.1.0"],
+  "version": "0.1.0",
+  "homeassistant": "2024.1.0"
+}

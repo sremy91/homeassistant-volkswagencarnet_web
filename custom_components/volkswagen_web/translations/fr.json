@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Volkswagen Web",
+        "description": "Configurez votre connexion au portail Volkswagen France",
+        "data": {
+          "email": "Adresse e-mail",
+          "password": "Mot de passe",
+          "name": "Nom (optionnel)"
+        }
+      },
+      "scan_settings": {
+        "title": "Paramètres de synchronisation",
+        "description": "Configurez la fréquence de récupération des données",
+        "data": {
+          "scan_interval": "Intervalle de synchronisation",
+          "auto_request_update": "Demander automatiquement les mises à jour du rapport",
+          "request_advance_hours": "Déclencher la demande N heures avant"
+        },
+        "data_description": {
+          "scan_interval": "La fréquence à laquelle les données seront mises à jour",
+          "request_advance_hours": "Par exemple : si défini à 1h et qu'un rapport est prévu à 18h, il sera déclenché à 17h"
+        }
+      },
+      "vehicles": {
+        "title": "Sélectionner les véhicules",
+        "description": "Choisissez les véhicules à intégrer dans Home Assistant"
+      }
+    },
+    "error": {
+      "invalid_auth": "Authentification échouée. Vérifiez votre e-mail et mot de passe.",
+      "cannot_connect": "Impossible de se connecter. Vérifiez votre connexion réseau.",
+      "unknown": "Erreur inconnue lors de la configuration."
+    },
+    "abort": {
+      "already_configured": "Ce compte est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options Volkswagen Web",
+        "data": {
+          "scan_interval": "Intervalle de synchronisation",
+          "auto_request_update": "Demander automatiquement les mises à jour",
+          "request_advance_hours": "Déclencher la demande N heures avant"
+        }
+      }
+    }
+  },
+  "services": {
+    "request_vehicle_report": {
+      "name": "Demander un rapport véhicule",
+      "description": "Demande un nouveau rapport de santé véhicule",
+      "fields": {
+        "device_id": {
+          "name": "Véhicule",
+          "description": "Le véhicule pour lequel demander le rapport"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mileage_km": {
+        "name": "Kilométrage"
+      },
+      "last_report_timestamp": {
+        "name": "Dernier rapport"
+      },
+      "model_name": {
+        "name": "Modèle"
+      },
+      "license_plate": {
+        "name": "Immatriculation"
+      },
+      "vehicle_status": {
+        "name": "État véhicule"
+      },
+      "status_freins": {
+        "name": "État freins"
+      },
+      "status_pneus": {
+        "name": "État pneus"
+      },
+      "status_transmission": {
+        "name": "État transmission"
+      },
+      "status_feux_de_route": {
+        "name": "État éclairage"
+      },
+      "status_assistants": {
+        "name": "État assistants"
+      },
+      "status_confort": {
+        "name": "État confort"
+      },
+      "warninglights_last": {
+        "name": "Dernier diagnostic"
+      },
+      "contracts": {
+        "name": "Contrats"
+      },
+      "service_partner": {
+        "name": "Partenaire service"
+      }
+    },
+    "button": {
+      "request_update": {
+        "name": "Demander un rapport"
+      }
+    },
+    "camera": {
+      "vehicle_images": {
+        "name": "Images véhicule"
+      }
+    }
+  }
+}
