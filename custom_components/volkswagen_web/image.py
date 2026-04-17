@@ -54,7 +54,6 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         image_index: int,
     ) -> None:
         CoordinatorEntity.__init__(self, coordinator)
-        ImageEntity.__init__(self)
         self._vin = vin
         self._image_index = image_index
         self._attr_unique_id = f"{vin}-image-{image_index}"
