@@ -1,0 +1,11 @@
+request_vehicle_report:
+  name: Request vehicle report
+  description: Request a new vehicle health report.
+  fields:
+    device_id:
+      name: Vehicle VIN
+      description: VIN of the vehicle to request a report for.
+      required: true
+      example: WVWZZZ1JZXW000001
+      selector:
+        text:
