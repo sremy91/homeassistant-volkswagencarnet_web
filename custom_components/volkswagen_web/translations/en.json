@@ -56,7 +56,8 @@
           "scan_interval": "Synchronization frequency",
           "fetch_history_on_setup": "Fetch history on startup",
           "auto_request_update": "Automatically request vehicle updates",
-          "request_advance_hours": "Hours before to trigger request"
+          "request_advance_hours": "Hours before to trigger request",
+          "manual_request_refresh_delay_minutes": "Refresh delay after manual request (minutes)"
         }
       },
       "schedule_options": {
@@ -64,11 +65,7 @@
         "data": {
           "scan_time": "Time (HH:MM)",
           "scan_weekday": "Day of week",
-          "scan_day_of_month": "Day of month",
-          "fetch_history_on_setup": "Fetch history on startup",
-          "auto_request_update": "Automatically request vehicle updates",
-          "request_advance_hours": "Hours before to trigger request",
-          "manual_request_refresh_delay_minutes": "Refresh delay after manual request (minutes)"
+          "scan_day_of_month": "Day of month"
         }
       }
     }

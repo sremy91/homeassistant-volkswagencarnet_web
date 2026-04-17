@@ -104,6 +104,35 @@ def _build_schedule_schema(
     return vol.Schema(schema_dict)
 
 
+def _build_schedule_time_only_schema(
+    interval: str,
+    *,
+    defaults: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Construit un schéma limité à l'horaire/jour (sans options globales)."""
+    defaults = defaults or {}
+    schema_dict: dict[Any, Any] = {
+        vol.Optional(CONF_SCAN_TIME, default=defaults.get(CONF_SCAN_TIME, DEFAULT_SCAN_TIME)): str,
+    }
+
+    if interval in (SCAN_INTERVAL_WEEKLY, SCAN_INTERVAL_BIWEEKLY):
+        schema_dict[
+            vol.Optional(
+                CONF_SCAN_WEEKDAY,
+                default=str(defaults.get(CONF_SCAN_WEEKDAY, DEFAULT_SCAN_WEEKDAY)),
+            )
+        ] = vol.In(_weekday_options())
+    elif interval == SCAN_INTERVAL_MONTHLY:
+        schema_dict[
+            vol.Optional(
+                CONF_SCAN_DAY_OF_MONTH,
+                default=str(defaults.get(CONF_SCAN_DAY_OF_MONTH, DEFAULT_SCAN_DAY_OF_MONTH)),
+            )
+        ] = vol.In(_day_of_month_options())
+
+    return vol.Schema(schema_dict)
+
+
 def _validate_schedule_input(interval: str, data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, str]]:
     errors: dict[str, str] = {}
     normalized = dict(data)
@@ -373,7 +402,7 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
                 return self.async_create_entry(title="", data=all_options)
 
         current = {**self._entry.data, **self._entry.options}
-        schema = _build_schedule_schema(self.scan_interval, is_options=True, defaults=current)
+        schema = _build_schedule_time_only_schema(self.scan_interval, defaults=current)
 
         return self.async_show_form(
             step_id="schedule_options",
