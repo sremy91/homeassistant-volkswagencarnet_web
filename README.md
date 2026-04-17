@@ -8,7 +8,7 @@ into Home Assistant using the [`volkswagencarnet_web`](https://github.com/sremy9
 - 🚗 **Per-vehicle entities** grouped by VIN/device
 - 📊 **Vehicle Health sensors**: mileage, last report date, status by system, contracts, service partner
 - 🧭 **Diagnostic sensors**: VIN, model, license plate, report summary
-- 📷 **Images support**: camera + one image entity per available vehicle image
+- 📷 **Images support**: one image entity per available vehicle image
 - 🔘 **Action buttons**: request new report + fetch history
 - ⚙️ **Configurable sync**: hourly or monthly refresh intervals
 - 🔄 **Auto report request scheduling** with pre-trigger option
@@ -97,12 +97,6 @@ Choose which vehicles to integrate into Home Assistant.
 |---|---|
 | `request_update` | Request a new vehicle health report |
 | `request_history` | Fetch warning lights history |
-
-### Camera
-
-| Camera | Description |
-|---|---|
-| `vehicle_images` | Exterior images from VILMA |
 
 ### Image
 
