@@ -263,7 +263,7 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry) -> None:
         """Initialize options flow with current config entry."""
-        self.config_entry = config_entry
+        self._entry = config_entry
         self.scan_interval = config_entry.options.get(
             CONF_SCAN_INTERVAL,
             config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -285,7 +285,7 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
             }
             return await self.async_step_schedule_options()
 
-        current = {**self.config_entry.data, **self.config_entry.options}
+        current = {**self._entry.data, **self._entry.options}
 
         return self.async_show_form(
             step_id="init",
@@ -344,7 +344,7 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
 
                 return self.async_create_entry(title="", data=all_options)
 
-        current = {**self.config_entry.data, **self.config_entry.options}
+        current = {**self._entry.data, **self._entry.options}
         schema = _build_schedule_schema(self.scan_interval, is_options=True, defaults=current)
 
         return self.async_show_form(
