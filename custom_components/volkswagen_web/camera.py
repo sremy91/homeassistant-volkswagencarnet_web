@@ -12,7 +12,7 @@ from typing import Any, AsyncGenerator
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.network import get_url
+from homeassistant.helpers.network import NoURLAvailable, get_url
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -211,9 +211,25 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         """
         # Le worker stream (ffmpeg) a besoin d'une URL HTTP absolue.
         path = f"/api/{DOMAIN}/mjpeg/{self._vin}"
-        try:
-            base_url = get_url(self.hass, prefer_external=False)
-        except Exception:
+        base_url: str | None = None
+
+        # Priorité à l'URL interne (la plus fiable pour ffmpeg côté HA),
+        # puis externe, puis URL auto.
+        url_candidates = (
+            {"prefer_internal": True},
+            {"prefer_external": True},
+            {"prefer_external": False},
+        )
+        for kwargs in url_candidates:
+            try:
+                base_url = get_url(self.hass, allow_ip=True, **kwargs)
+                if base_url:
+                    break
+            except NoURLAvailable:
+                continue
+
+        if not base_url:
+            # Fallback ultime si HA n'a pas d'URL configurée.
             base_url = "http://127.0.0.1:8123"
 
         return f"{base_url.rstrip('/')}{path}"
