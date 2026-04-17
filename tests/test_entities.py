@@ -1,4 +1,4 @@
-"""Tests pour les entités button et camera du composant Volkswagen Web."""
+"""Tests pour les entités button, camera et image du composant Volkswagen Web."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import pytest
 
 from custom_components.volkswagen_web.button import VolkswagenRequestUpdateButton
 from custom_components.volkswagen_web.camera import VolkswagenCamera
+from custom_components.volkswagen_web.image import VolkswagenImageEntity
 
 
 def _make_coordinator(vin: str = "WVWTEST0000000001") -> MagicMock:
@@ -162,3 +163,111 @@ def test_camera_device_info():
     cam = VolkswagenCamera(coordinator, "WVWTEST0000000001")
     info = cam.device_info
     assert ("volkswagen_web", "WVWTEST0000000001") in info["identifiers"]
+
+
+# ── Tests Image Entity ───────────────────────────────────────────────────────
+
+def test_image_entity_unique_id():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=0)
+    assert img._attr_unique_id == "WVWTEST0000000001-image-0"
+
+
+def test_image_entity_name():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=0)
+    assert img.name == "Image 1"
+    
+    img2 = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=2)
+    assert img2.name == "Image 3"
+
+
+def test_image_entity_available():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=0)
+    assert img.available is True
+
+
+def test_image_entity_unavailable_when_index_out_of_range():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=5)
+    assert img.available is False
+
+
+def test_image_entity_unavailable_when_no_data():
+    coordinator = MagicMock()
+    coordinator.last_update_success = True
+    coordinator.data = {}
+    img = VolkswagenImageEntity(coordinator, "UNKNOWNVIN", image_index=0)
+    assert img.available is False
+
+
+@pytest.mark.asyncio
+async def test_image_entity_async_image_returns_bytes():
+    """async_image doit retourner des bytes décodés depuis base64."""
+    fake_bytes = b"\x89PNG\r\n\x1a\n"
+    image_b64 = base64.b64encode(fake_bytes).decode()
+
+    coordinator = _make_coordinator()
+    coordinator.data["WVWTEST0000000001"]["images"] = [
+        {"image_data": image_b64, "url": "https://example.com/img1.jpg"},
+        {"image_data": image_b64, "url": "https://example.com/img2.jpg"},
+    ]
+    
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=0)
+    result = await img.async_image()
+    assert result == fake_bytes
+
+
+@pytest.mark.asyncio
+async def test_image_entity_async_image_second_index():
+    """async_image doit retourner l'image à l'index correct."""
+    fake_bytes1 = b"IMAGE1"
+    fake_bytes2 = b"IMAGE2"
+    image_b64_1 = base64.b64encode(fake_bytes1).decode()
+    image_b64_2 = base64.b64encode(fake_bytes2).decode()
+
+    coordinator = _make_coordinator()
+    coordinator.data["WVWTEST0000000001"]["images"] = [
+        {"image_data": image_b64_1},
+        {"image_data": image_b64_2},
+    ]
+    
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=1)
+    result = await img.async_image()
+    assert result == fake_bytes2
+
+
+@pytest.mark.asyncio
+async def test_image_entity_async_image_returns_none_when_out_of_range():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=10)
+    result = await img.async_image()
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_image_entity_async_image_returns_none_when_no_data():
+    coordinator = MagicMock()
+    coordinator.last_update_success = True
+    coordinator.data = {}
+    img = VolkswagenImageEntity(coordinator, "UNKNOWNVIN", image_index=0)
+    result = await img.async_image()
+    assert result is None
+
+
+def test_image_entity_extra_attributes():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=0)
+    attrs = img.extra_state_attributes
+    assert attrs["vin"] == "WVWTEST0000000001"
+    assert attrs["image_index"] == 0
+    assert attrs["url"] == "https://example.com/car.jpg"
+
+
+def test_image_entity_device_info():
+    coordinator = _make_coordinator()
+    img = VolkswagenImageEntity(coordinator, "WVWTEST0000000001", image_index=0)
+    info = img.device_info
+    assert ("volkswagen_web", "WVWTEST0000000001") in info["identifiers"]
+    assert info["manufacturer"] == "Volkswagen"

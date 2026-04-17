@@ -137,6 +137,11 @@
       "vehicle_images": {
         "name": "Images véhicule"
       }
+    },
+    "image": {
+      "vehicle_image": {
+        "name": "Photo véhicule"
+      }
     }
   }
 }

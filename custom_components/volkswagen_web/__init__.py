@@ -34,7 +34,7 @@ from .coordinator import VolkswagenWebCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["sensor", "button", "camera"]
+PLATFORMS = ["sensor", "button", "camera", "image"]
 
 
 SERVICE_SCHEMA = vol.Schema({vol.Required("device_id"): cv.string})
