@@ -172,6 +172,8 @@ class VolkswagenManualRequestRefreshDelayNumber(VolkswagenBaseOptionNumber):
     def __init__(self, coordinator: VolkswagenWebCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry, CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES)
         self._attr_translation_key = CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES
+        # Fallback explicite si la traduction n'est pas appliquée côté registry.
+        self._attr_name = "Manual refresh delay (minutes)"
         self._attr_native_min_value = 1
         self._attr_native_max_value = 720
         self._attr_native_step = 1
