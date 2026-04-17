@@ -6,6 +6,6 @@
   "documentation": "https://github.com/sremy91/homeassistant-volkswagencarnet_web",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/sremy91/homeassistant-volkswagencarnet_web/issues",
-  "requirements": ["volkswagencarnet_web @ git+https://github.com/sremy91/volkswagencarnet_web.git@main"],
+  "requirements": ["volkswagencarnet_web@git+https://github.com/sremy91/volkswagencarnet_web.git@main"],
   "version": "0.1.0"
 }
