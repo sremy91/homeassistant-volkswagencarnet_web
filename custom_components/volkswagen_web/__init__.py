@@ -70,6 +70,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Setup d'une entry de configuration."""
     hass.data.setdefault(DOMAIN, {})
+    connection: VolkswagenWebConnection | None = None
 
     try:
         # Crée la connexion et initialise la session HTTP persistante.
@@ -87,6 +88,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         if not selected_vins:
             _LOGGER.error("Aucun véhicule sélectionné")
+            await connection.__aexit__(None, None, None)
             return False
 
         # Crée le coordinateur (transmet tous les paramètres de planification)
@@ -124,6 +126,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return True
 
     except Exception as err:
+        if connection and connection._session is not None:
+            await connection.__aexit__(None, None, None)
         _LOGGER.exception("Erreur lors du setup de l'entry: %s", err)
         if "auth" in str(err).lower():
             raise ConfigEntryAuthFailed from err
