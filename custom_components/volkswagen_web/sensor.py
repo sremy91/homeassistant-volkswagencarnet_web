@@ -88,6 +88,7 @@ class VolkswagenSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._vin = vin
         self._attr = attr
+        self._attr_has_entity_name = True
         self._attr_unique_id = f"{vin}-sensor-{attr}"
         self._attr_translation_key = attr
         self._attr_device_class = device_class

@@ -46,6 +46,7 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         CoordinatorEntity.__init__(self, coordinator)
         Camera.__init__(self)
         self._vin = vin
+        self._attr_has_entity_name = True
         self._attr_unique_id = f"{vin}-camera-vehicle_images"
         self._attr_translation_key = "vehicle_images"
         self._attr_icon = "mdi:image-multiple"

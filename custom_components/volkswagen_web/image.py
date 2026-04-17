@@ -60,6 +60,7 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         CoordinatorEntity.__init__(self, coordinator)
         self._vin = vin
         self._image_index = image_index
+        self._attr_has_entity_name = True
         self._attr_unique_id = f"{vin}-image-{image_index}"
         self._attr_translation_key = "vehicle_image"
         # ImageEntity.__init__ requires hass; initialize its state manually
