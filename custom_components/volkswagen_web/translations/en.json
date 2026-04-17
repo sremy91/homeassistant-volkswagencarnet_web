@@ -23,7 +23,10 @@
         "data": {
           "scan_time": "Time (HH:MM)",
           "scan_weekday": "Day of week",
-          "scan_day_of_month": "Day of month"
+          "scan_day_of_month": "Day of month",
+          "fetch_history_on_setup": "Fetch history on setup",
+          "auto_request_update": "Automatically request vehicle updates",
+          "request_advance_hours": "Hours before to trigger request"
         }
       },
       "vehicles": {
@@ -50,6 +53,7 @@
         "title": "Volkswagen Web Options",
         "data": {
           "scan_interval": "Synchronization frequency",
+          "fetch_history_on_setup": "Fetch history on startup",
           "auto_request_update": "Automatically request vehicle updates",
           "request_advance_hours": "Hours before to trigger request"
         }
@@ -60,6 +64,7 @@
           "scan_time": "Time (HH:MM)",
           "scan_weekday": "Day of week",
           "scan_day_of_month": "Day of month",
+          "fetch_history_on_setup": "Fetch history on startup",
           "auto_request_update": "Automatically request vehicle updates",
           "request_advance_hours": "Hours before to trigger request"
         }
@@ -129,6 +134,9 @@
     "button": {
       "request_update": {
         "name": "Request health report"
+      },
+      "request_history": {
+        "name": "Fetch history"
       }
     },
     "camera": {

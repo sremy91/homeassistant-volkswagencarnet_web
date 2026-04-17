@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.volkswagen_web.button import VolkswagenRequestUpdateButton
+from custom_components.volkswagen_web.button import VolkswagenRequestHistoryButton
 from custom_components.volkswagen_web.camera import VolkswagenCamera
 from custom_components.volkswagen_web.image import VolkswagenImageEntity
 
@@ -28,6 +29,8 @@ def _make_coordinator(vin: str = "WVWTEST0000000001") -> MagicMock:
     coordinator.vins = [vin]
     coordinator.last_update_success = True
     coordinator.async_request_report_manual = AsyncMock(return_value=True)
+    coordinator.async_request_history_manual = AsyncMock(return_value=True)
+    coordinator.async_request_refresh = AsyncMock(return_value=True)
     coordinator.data = {
         vin: {
             "vehicle": vehicle,
@@ -95,6 +98,34 @@ async def test_button_press_logs_warning_on_failure():
     # Ne doit pas lever d'exception
     await btn.async_press()
     coordinator.async_request_report_manual.assert_awaited_once()
+
+
+def test_history_button_unique_id():
+    coordinator = _make_coordinator()
+    btn = VolkswagenRequestHistoryButton(coordinator, "WVWTEST0000000001")
+    assert btn._attr_unique_id == "WVWTEST0000000001-button-request_history"
+
+
+def test_history_button_icon():
+    coordinator = _make_coordinator()
+    btn = VolkswagenRequestHistoryButton(coordinator, "WVWTEST0000000001")
+    assert btn._attr_icon == "mdi:history"
+
+
+def test_history_button_available():
+    coordinator = _make_coordinator()
+    btn = VolkswagenRequestHistoryButton(coordinator, "WVWTEST0000000001")
+    assert btn.available is True
+
+
+@pytest.mark.asyncio
+async def test_history_button_press_calls_coordinator():
+    """async_press doit appeler coordinator.async_request_history_manual avec le VIN."""
+    coordinator = _make_coordinator()
+    btn = VolkswagenRequestHistoryButton(coordinator, "WVWTEST0000000001")
+    await btn.async_press()
+    coordinator.async_request_history_manual.assert_awaited_once_with("WVWTEST0000000001")
+    coordinator.async_request_refresh.assert_awaited_once()
 
 
 # ── Tests Camera ─────────────────────────────────────────────────────────────

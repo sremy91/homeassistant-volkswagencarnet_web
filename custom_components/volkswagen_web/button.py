@@ -25,10 +25,10 @@ async def async_setup_entry(
     """Crée les entités button."""
     coordinator: VolkswagenWebCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
-    entities = [
-        VolkswagenRequestUpdateButton(coordinator=coordinator, vin=vin)
-        for vin in coordinator.vins
-    ]
+    entities = []
+    for vin in coordinator.vins:
+        entities.append(VolkswagenRequestUpdateButton(coordinator=coordinator, vin=vin))
+        entities.append(VolkswagenRequestHistoryButton(coordinator=coordinator, vin=vin))
     async_add_entities(entities)
 
 
@@ -72,3 +72,47 @@ class VolkswagenRequestUpdateButton(CoordinatorEntity, ButtonEntity):
         success = await self.coordinator.async_request_report_manual(self._vin)
         if not success:
             _LOGGER.warning("Échec de la demande de rapport pour VIN %s", self._vin)
+
+
+class VolkswagenRequestHistoryButton(CoordinatorEntity, ButtonEntity):
+    """Bouton pour déclencher une récupération de l'historique véhicule."""
+
+    def __init__(
+        self,
+        coordinator: VolkswagenWebCoordinator,
+        vin: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._vin = vin
+        self._attr_unique_id = f"{vin}-button-request_history"
+        self._attr_translation_key = "request_history"
+        self._attr_icon = "mdi:history"
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Associe le bouton au même device que les sensors."""
+        vehicle_data = (self.coordinator.data or {}).get(self._vin) or {}
+        vehicle = vehicle_data.get("vehicle")
+        nickname = getattr(vehicle, "nickname", None) or self._vin
+
+        return {
+            "identifiers": {(DOMAIN, self._vin)},
+            "name": nickname,
+            "manufacturer": "Volkswagen",
+        }
+
+    @property
+    def available(self) -> bool:
+        return (
+            self.coordinator.last_update_success
+            and (self.coordinator.data or {}).get(self._vin) is not None
+        )
+
+    async def async_press(self) -> None:
+        """Déclenche une récupération manuelle de l'historique véhicule."""
+        _LOGGER.info("Demande manuelle d'historique pour VIN %s", self._vin)
+        success = await self.coordinator.async_request_history_manual(self._vin)
+        if success:
+            await self.coordinator.async_request_refresh()
+        else:
+            _LOGGER.warning("Échec de la récupération d'historique pour VIN %s", self._vin)

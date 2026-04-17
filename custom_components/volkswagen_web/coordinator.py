@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_EMAIL,
+    CONF_FETCH_HISTORY_ON_SETUP,
     CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
@@ -76,8 +77,13 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         update_interval = self._calculate_next_update_interval()
 
         self._last_request_at: dict[str, datetime] = {}
+        self._history_cache: dict[str, dict[str, Any]] = {}
         self._auto_request_enabled = _to_bool_or_default(
             config.get(CONF_AUTO_REQUEST_UPDATE),
+            True,
+        )
+        self._fetch_history_on_setup = _to_bool_or_default(
+            config.get(CONF_FETCH_HISTORY_ON_SETUP),
             True,
         )
         self._request_advance_hours = _to_int_or_default(
@@ -244,11 +250,45 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
                 "state": state,
                 "dashboard": dashboard,
                 "images": images_list if isinstance(images_list, list) else [],
+                "history": self._history_cache.get(vin),
                 "timestamp": datetime.now(),
             }
         except Exception as err:
             _LOGGER.error(f"Erreur lors de la récupération des données du VIN {vin}: {err}")
             raise
+
+    @property
+    def fetch_history_on_setup(self) -> bool:
+        """Indique si l'historique doit être récupéré au démarrage."""
+        return self._fetch_history_on_setup
+
+    async def async_request_history_manual(self, vin: str) -> bool:
+        """Déclenche manuellement la récupération des informations historiques."""
+        try:
+            vehicles = await self.connection.list_vehicles()
+            vehicle = next((v for v in vehicles if v.vin == vin), None)
+
+            if not vehicle:
+                _LOGGER.warning("Véhicule VIN %s non trouvé pour history request.", vin)
+                return False
+
+            _LOGGER.info("Récupération manuelle de l'historique pour VIN %s", vin)
+            history = await vehicle.get_warninglights_history()
+            self._history_cache[vin] = {
+                "data": history,
+                "fetched_at": datetime.now().isoformat(),
+            }
+            return True
+
+        except Exception as err:
+            _LOGGER.error("Erreur lors de la récupération d'historique pour %s: %s", vin, err)
+            return False
+
+    async def async_fetch_history_for_all(self) -> None:
+        """Récupère l'historique pour tous les VINs configurés."""
+        tasks = [self.async_request_history_manual(vin) for vin in self.vins]
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await self.async_request_refresh()
 
     async def _async_check_auto_request(self) -> None:
         """Vérifie si un request_update doit être déclenché automatiquement.

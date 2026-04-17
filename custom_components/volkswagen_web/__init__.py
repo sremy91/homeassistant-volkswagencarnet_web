@@ -17,6 +17,7 @@ from homeassistant.helpers import config_validation as cv
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_EMAIL,
+    CONF_FETCH_HISTORY_ON_SETUP,
     CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
@@ -81,6 +82,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await connection.__aenter__()
 
         # Authentifie la session avec les credentials de l'entry.
+        merged_config = {**entry.data, **entry.options}
+
         await connection.login(
             username=entry.data[CONF_EMAIL],
             password=entry.data[CONF_PASSWORD],
@@ -102,17 +105,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             config={
                 CONF_EMAIL: entry.data.get(CONF_EMAIL),
                 CONF_PASSWORD: entry.data.get(CONF_PASSWORD),
-                CONF_SCAN_INTERVAL: entry.data.get(CONF_SCAN_INTERVAL),
-                CONF_SCAN_TIME: entry.data.get(CONF_SCAN_TIME),
-                CONF_SCAN_WEEKDAY: entry.data.get(CONF_SCAN_WEEKDAY),
-                CONF_SCAN_DAY_OF_MONTH: entry.data.get(CONF_SCAN_DAY_OF_MONTH),
-                CONF_AUTO_REQUEST_UPDATE: entry.data.get(CONF_AUTO_REQUEST_UPDATE),
-                CONF_REQUEST_ADVANCE_HOURS: entry.data.get(CONF_REQUEST_ADVANCE_HOURS),
+                CONF_SCAN_INTERVAL: merged_config.get(CONF_SCAN_INTERVAL),
+                CONF_SCAN_TIME: merged_config.get(CONF_SCAN_TIME),
+                CONF_SCAN_WEEKDAY: merged_config.get(CONF_SCAN_WEEKDAY),
+                CONF_SCAN_DAY_OF_MONTH: merged_config.get(CONF_SCAN_DAY_OF_MONTH),
+                CONF_FETCH_HISTORY_ON_SETUP: merged_config.get(CONF_FETCH_HISTORY_ON_SETUP),
+                CONF_AUTO_REQUEST_UPDATE: merged_config.get(CONF_AUTO_REQUEST_UPDATE),
+                CONF_REQUEST_ADVANCE_HOURS: merged_config.get(CONF_REQUEST_ADVANCE_HOURS),
             },
         )
 
         # Effectue la première récupération de données
         await coordinator.async_config_entry_first_refresh()
+
+        # Optionnel: récupère l'historique au setup de l'intégration.
+        if coordinator.fetch_history_on_setup:
+            await coordinator.async_fetch_history_for_all()
 
         # Stocke les données
         hass.data[DOMAIN][entry.entry_id] = {

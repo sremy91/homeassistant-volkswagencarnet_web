@@ -23,7 +23,10 @@
         "data": {
           "scan_time": "Heure (HH:MM)",
           "scan_weekday": "Jour de la semaine",
-          "scan_day_of_month": "Jour du mois"
+          "scan_day_of_month": "Jour du mois",
+          "fetch_history_on_setup": "Récupérer l'historique à l'installation",
+          "auto_request_update": "Demander automatiquement les mises à jour",
+          "request_advance_hours": "Heures avant pour déclencher la demande"
         }
       },
       "vehicles": {
@@ -47,6 +50,7 @@
         "title": "Options Volkswagen Web",
         "data": {
           "scan_interval": "Fréquence de synchronisation",
+          "fetch_history_on_setup": "Récupérer l'historique au démarrage",
           "auto_request_update": "Demander automatiquement les mises à jour",
           "request_advance_hours": "Heures avant pour déclencher la demande"
         }
@@ -57,6 +61,7 @@
           "scan_time": "Heure (HH:MM)",
           "scan_weekday": "Jour de la semaine",
           "scan_day_of_month": "Jour du mois",
+          "fetch_history_on_setup": "Récupérer l'historique au démarrage",
           "auto_request_update": "Demander automatiquement les mises à jour",
           "request_advance_hours": "Heures avant pour déclencher la demande"
         }
@@ -123,6 +128,9 @@
     "button": {
       "request_update": {
         "name": "Demander un rapport"
+      },
+      "request_history": {
+        "name": "Récupérer l'historique"
       }
     },
     "camera": {

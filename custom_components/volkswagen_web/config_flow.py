@@ -16,6 +16,7 @@ from volkswagencarnet_web import VolkswagenWebConnection
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_EMAIL,
+    CONF_FETCH_HISTORY_ON_SETUP,
     CONF_NAME,
     CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
@@ -25,6 +26,7 @@ from .const import (
     CONF_SCAN_WEEKDAY,
     CONF_VEHICLES,
     DEFAULT_AUTO_REQUEST_UPDATE,
+    DEFAULT_FETCH_HISTORY_ON_SETUP,
     DEFAULT_REQUEST_ADVANCE_HOURS,
     DEFAULT_SCAN_DAY_OF_MONTH,
     DEFAULT_SCAN_INTERVAL,
@@ -61,6 +63,10 @@ def _build_schedule_schema(
 
     schema_dict: dict[Any, Any] = {
         key_fn(CONF_SCAN_TIME, default=defaults.get(CONF_SCAN_TIME, DEFAULT_SCAN_TIME)): str,
+        key_fn(
+            CONF_FETCH_HISTORY_ON_SETUP,
+            default=defaults.get(CONF_FETCH_HISTORY_ON_SETUP, DEFAULT_FETCH_HISTORY_ON_SETUP),
+        ): bool,
         key_fn(
             CONF_AUTO_REQUEST_UPDATE,
             default=defaults.get(CONF_AUTO_REQUEST_UPDATE, DEFAULT_AUTO_REQUEST_UPDATE),
@@ -270,6 +276,10 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
             self.scan_interval = user_input.get(CONF_SCAN_INTERVAL, self.scan_interval)
             self._init_data = {
                 CONF_SCAN_INTERVAL: self.scan_interval,
+                CONF_FETCH_HISTORY_ON_SETUP: user_input.get(
+                    CONF_FETCH_HISTORY_ON_SETUP,
+                    DEFAULT_FETCH_HISTORY_ON_SETUP,
+                ),
                 CONF_AUTO_REQUEST_UPDATE: user_input.get(CONF_AUTO_REQUEST_UPDATE, DEFAULT_AUTO_REQUEST_UPDATE),
                 CONF_REQUEST_ADVANCE_HOURS: user_input.get(CONF_REQUEST_ADVANCE_HOURS, DEFAULT_REQUEST_ADVANCE_HOURS),
             }
@@ -292,6 +302,10 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
                             SCAN_INTERVAL_MONTHLY: "mensuelle",
                         }
                     ),
+                    vol.Optional(
+                        CONF_FETCH_HISTORY_ON_SETUP,
+                        default=current.get(CONF_FETCH_HISTORY_ON_SETUP, DEFAULT_FETCH_HISTORY_ON_SETUP),
+                    ): bool,
                     vol.Optional(
                         CONF_AUTO_REQUEST_UPDATE,
                         default=current.get(CONF_AUTO_REQUEST_UPDATE, DEFAULT_AUTO_REQUEST_UPDATE),
