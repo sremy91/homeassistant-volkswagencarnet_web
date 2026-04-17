@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_FETCH_HISTORY_ON_SETUP,
+    CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
     CONF_SCAN_INTERVAL,
@@ -17,6 +18,7 @@ from .const import (
     CONF_SCAN_WEEKDAY,
     DEFAULT_AUTO_REQUEST_UPDATE,
     DEFAULT_FETCH_HISTORY_ON_SETUP,
+    DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     DEFAULT_REQUEST_ADVANCE_HOURS,
     DEFAULT_SCAN_DAY_OF_MONTH,
     DEFAULT_SCAN_INTERVAL,
@@ -41,6 +43,12 @@ def editable_options_from_entry(entry: ConfigEntry) -> dict[str, Any]:
         ),
         CONF_REQUEST_ADVANCE_HOURS: int(
             merged.get(CONF_REQUEST_ADVANCE_HOURS, DEFAULT_REQUEST_ADVANCE_HOURS)
+        ),
+        CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES: int(
+            merged.get(
+                CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+            )
         ),
     }
 

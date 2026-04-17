@@ -14,6 +14,7 @@ CONF_SCAN_WEEKDAY = "scan_weekday"     # 0-6 (Monday-Sunday)
 CONF_SCAN_DAY_OF_MONTH = "scan_day_of_month"  # 1-31
 CONF_AUTO_REQUEST_UPDATE = "auto_request_update"
 CONF_REQUEST_ADVANCE_HOURS = "request_advance_hours"
+CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES = "manual_request_refresh_delay_minutes"
 CONF_FETCH_HISTORY_ON_SETUP = "fetch_history_on_setup"
 CONF_VEHICLES = "vehicles"
 
@@ -57,6 +58,7 @@ DEFAULT_SCAN_WEEKDAY = 0           # Lundi
 DEFAULT_SCAN_DAY_OF_MONTH = 1      # 1er du mois
 DEFAULT_AUTO_REQUEST_UPDATE = True
 DEFAULT_REQUEST_ADVANCE_HOURS = 1
+DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES = 60
 DEFAULT_FETCH_HISTORY_ON_SETUP = True
 
 # Données interne

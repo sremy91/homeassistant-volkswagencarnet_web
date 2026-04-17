@@ -18,6 +18,7 @@ from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_EMAIL,
     CONF_FETCH_HISTORY_ON_SETUP,
+    CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
@@ -110,6 +111,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 CONF_FETCH_HISTORY_ON_SETUP: merged_config.get(CONF_FETCH_HISTORY_ON_SETUP),
                 CONF_AUTO_REQUEST_UPDATE: merged_config.get(CONF_AUTO_REQUEST_UPDATE),
                 CONF_REQUEST_ADVANCE_HOURS: merged_config.get(CONF_REQUEST_ADVANCE_HOURS),
+                CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES: merged_config.get(
+                    CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES
+                ),
             },
         )
 

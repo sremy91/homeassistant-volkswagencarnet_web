@@ -26,7 +26,8 @@
           "scan_day_of_month": "Day of month",
           "fetch_history_on_setup": "Fetch history on setup",
           "auto_request_update": "Automatically request vehicle updates",
-          "request_advance_hours": "Hours before to trigger request"
+          "request_advance_hours": "Hours before to trigger request",
+          "manual_request_refresh_delay_minutes": "Refresh delay after manual request (minutes)"
         }
       },
       "vehicles": {
@@ -66,7 +67,8 @@
           "scan_day_of_month": "Day of month",
           "fetch_history_on_setup": "Fetch history on startup",
           "auto_request_update": "Automatically request vehicle updates",
-          "request_advance_hours": "Hours before to trigger request"
+          "request_advance_hours": "Hours before to trigger request",
+          "manual_request_refresh_delay_minutes": "Refresh delay after manual request (minutes)"
         }
       }
     }
@@ -156,6 +158,9 @@
     "number": {
       "request_advance_hours": {
         "name": "Request lead time (hours)"
+      },
+      "manual_request_refresh_delay_minutes": {
+        "name": "Manual refresh delay (minutes)"
       },
       "scan_day_of_month": {
         "name": "Sync day of month"

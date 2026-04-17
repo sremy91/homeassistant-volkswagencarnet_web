@@ -14,12 +14,14 @@ from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_EMAIL,
     CONF_FETCH_HISTORY_ON_SETUP,
+    CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
     CONF_SCAN_DAY_OF_MONTH,
     CONF_SCAN_INTERVAL,
     CONF_SCAN_TIME,
     CONF_SCAN_WEEKDAY,
+    DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     DOMAIN,
     SCAN_INTERVAL_BIWEEKLY,
     SCAN_INTERVAL_DAILY,
@@ -90,6 +92,10 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
         self._request_advance_hours = _to_int_or_default(
             config.get(CONF_REQUEST_ADVANCE_HOURS),
             1,
+        )
+        self._manual_request_refresh_delay_minutes = _to_int_or_default(
+            config.get(CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES),
+            DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
         )
         self._username = config.get(CONF_EMAIL)
         self._password = config.get(CONF_PASSWORD)
@@ -464,10 +470,11 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
     def _manual_request_delay(self) -> timedelta:
         """Délai avant récupération après demande manuelle de rapport.
 
-        Basé sur l'intervalle configuré, plafonné à 1 heure.
+        Basé sur l'option utilisateur (minutes), plafonné par l'intervalle configuré.
         """
-        configured_delay = SCAN_INTERVAL_MAP.get(self.scan_interval_key, timedelta(hours=1))
-        return min(configured_delay, timedelta(hours=1))
+        requested_delay = timedelta(minutes=max(1, self._manual_request_refresh_delay_minutes))
+        interval_cap = SCAN_INTERVAL_MAP.get(self.scan_interval_key, requested_delay)
+        return min(requested_delay, interval_cap)
 
     def _schedule_delayed_refresh_after_manual_request(self, vin: str) -> None:
         """Planifie un refresh différé après un request_update manuel."""

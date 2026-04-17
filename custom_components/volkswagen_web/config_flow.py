@@ -17,6 +17,7 @@ from .const import (
     CONF_AUTO_REQUEST_UPDATE,
     CONF_EMAIL,
     CONF_FETCH_HISTORY_ON_SETUP,
+    CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     CONF_NAME,
     CONF_PASSWORD,
     CONF_REQUEST_ADVANCE_HOURS,
@@ -27,6 +28,7 @@ from .const import (
     CONF_VEHICLES,
     DEFAULT_AUTO_REQUEST_UPDATE,
     DEFAULT_FETCH_HISTORY_ON_SETUP,
+    DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
     DEFAULT_REQUEST_ADVANCE_HOURS,
     DEFAULT_SCAN_DAY_OF_MONTH,
     DEFAULT_SCAN_INTERVAL,
@@ -75,6 +77,13 @@ def _build_schedule_schema(
             CONF_REQUEST_ADVANCE_HOURS,
             default=defaults.get(CONF_REQUEST_ADVANCE_HOURS, DEFAULT_REQUEST_ADVANCE_HOURS),
         ): vol.All(vol.Coerce(int), vol.Range(min=1, max=24)),
+        key_fn(
+            CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+            default=defaults.get(
+                CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+            ),
+        ): vol.All(vol.Coerce(int), vol.Range(min=1, max=720)),
     }
 
     if interval in (SCAN_INTERVAL_WEEKLY, SCAN_INTERVAL_BIWEEKLY):
@@ -122,6 +131,14 @@ def _validate_schedule_input(interval: str, data: dict[str, Any]) -> tuple[dict[
             normalized[CONF_SCAN_DAY_OF_MONTH] = day
         except (TypeError, ValueError):
             errors[CONF_SCAN_DAY_OF_MONTH] = "invalid_day_of_month"
+
+    try:
+        delay = int(data.get(CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES, DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES))
+        if delay < 1 or delay > 720:
+            raise ValueError()
+        normalized[CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES] = delay
+    except (TypeError, ValueError):
+        errors[CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES] = "invalid_number"
 
     return normalized, errors
 
@@ -282,6 +299,10 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
                 ),
                 CONF_AUTO_REQUEST_UPDATE: user_input.get(CONF_AUTO_REQUEST_UPDATE, DEFAULT_AUTO_REQUEST_UPDATE),
                 CONF_REQUEST_ADVANCE_HOURS: user_input.get(CONF_REQUEST_ADVANCE_HOURS, DEFAULT_REQUEST_ADVANCE_HOURS),
+                CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES: user_input.get(
+                    CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                    DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                ),
             }
             return await self.async_step_schedule_options()
 
@@ -314,6 +335,13 @@ class VolkswagenWebOptionsFlow(config_entries.OptionsFlow):
                         CONF_REQUEST_ADVANCE_HOURS,
                         default=current.get(CONF_REQUEST_ADVANCE_HOURS, DEFAULT_REQUEST_ADVANCE_HOURS),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=24)),
+                    vol.Optional(
+                        CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                        default=current.get(
+                            CONF_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                            DEFAULT_MANUAL_REQUEST_REFRESH_DELAY_MINUTES,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=720)),
                 }
             ),
         )
