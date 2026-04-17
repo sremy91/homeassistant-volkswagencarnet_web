@@ -32,6 +32,7 @@ async def async_setup_entry(
     for vin in coordinator.vins:
         vehicle_data = (coordinator.data or {}).get(vin) or {}
         images = vehicle_data.get("images") or []
+        _LOGGER.debug("Image setup VIN %s: %d image(s) available", vin, len(images))
         
         # Une entité image par image disponible
         for idx, image in enumerate(images):
@@ -43,6 +44,7 @@ async def async_setup_entry(
                 )
             )
 
+    _LOGGER.debug("Adding %d image entity(ies)", len(entities))
     async_add_entities(entities)
 
 
@@ -82,9 +84,19 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         """Disponible si l'image existe et le coordinateur a des données."""
         vehicle_data = (self.coordinator.data or {}).get(self._vin)
         if not vehicle_data:
+            _LOGGER.debug("Image %s[%d] unavailable: no vehicle data", self._vin, self._image_index)
             return False
         images = vehicle_data.get("images") or []
-        return self.coordinator.last_update_success and self._image_index < len(images)
+        available = self.coordinator.last_update_success and self._image_index < len(images)
+        if not available:
+            _LOGGER.debug(
+                "Image %s[%d] unavailable: last_update_success=%s image_count=%d",
+                self._vin,
+                self._image_index,
+                self.coordinator.last_update_success,
+                len(images),
+            )
+        return available
 
     @property
     def name(self) -> str | None:
@@ -97,6 +109,12 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         # Génère un token d'accès initial pour les requêtes HTTP de l'image
         import secrets
         self.access_tokens.append(secrets.token_hex(32))
+        _LOGGER.debug(
+            "Image entity added for VIN %s index %d (access_tokens=%d)",
+            self._vin,
+            self._image_index,
+            len(self.access_tokens),
+        )
 
     @property
     def image_last_updated(self) -> datetime | None:
@@ -110,15 +128,23 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
         """Retourne les bytes JPEG/PNG de l'image (base64 → bytes)."""
         vehicle_data = (self.coordinator.data or {}).get(self._vin)
         if not vehicle_data:
+            _LOGGER.debug("Image fetch VIN %s[%d]: no vehicle data", self._vin, self._image_index)
             return None
 
         images: list[dict[str, Any]] = vehicle_data.get("images") or []
         if self._image_index >= len(images):
+            _LOGGER.debug(
+                "Image fetch VIN %s[%d]: index out of range (count=%d)",
+                self._vin,
+                self._image_index,
+                len(images),
+            )
             return None
 
         image_dict = images[self._image_index]
         image_data = image_dict.get("image_data") or image_dict.get("data")
         if not image_data:
+            _LOGGER.debug("Image fetch VIN %s[%d]: missing image_data/data key", self._vin, self._image_index)
             return None
 
         try:
@@ -127,6 +153,12 @@ class VolkswagenImageEntity(CoordinatorEntity, ImageEntity):
                 image_bytes = base64.b64decode(image_data)
             else:
                 image_bytes = image_data
+            _LOGGER.debug(
+                "Image fetch VIN %s[%d]: decoded %d bytes",
+                self._vin,
+                self._image_index,
+                len(image_bytes),
+            )
             return image_bytes
         except Exception as err:
             _LOGGER.error(

@@ -244,6 +244,13 @@ class VolkswagenWebCoordinator(DataUpdateCoordinator):
             dashboard = vehicle.dashboard()
             images_dict = await vehicle.get_images()
             images_list = images_dict.get("images", []) if isinstance(images_dict, dict) else []
+            _LOGGER.debug(
+                "VIN %s fetched: images=%d history_cached=%s contracts=%d",
+                vin,
+                len(images_list) if isinstance(images_list, list) else 0,
+                vin in self._history_cache,
+                len(getattr(state, "contracts", []) or []),
+            )
 
             return {
                 "vehicle": vehicle,

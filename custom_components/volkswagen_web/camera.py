@@ -31,6 +31,7 @@ async def async_setup_entry(
         VolkswagenCamera(coordinator=coordinator, vin=vin)
         for vin in coordinator.vins
     ]
+    _LOGGER.debug("Adding %d camera entity(ies)", len(entities))
     async_add_entities(entities)
 
 
@@ -70,9 +71,18 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
     def available(self) -> bool:
         vehicle_data = (self.coordinator.data or {}).get(self._vin)
         if not vehicle_data:
+            _LOGGER.debug("Camera %s unavailable: no vehicle data", self._vin)
             return False
         images = vehicle_data.get("images") or []
-        return self.coordinator.last_update_success and len(images) > 0
+        available = self.coordinator.last_update_success and len(images) > 0
+        if not available:
+            _LOGGER.debug(
+                "Camera %s unavailable: last_update_success=%s image_count=%d",
+                self._vin,
+                self.coordinator.last_update_success,
+                len(images),
+            )
+        return available
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
@@ -80,16 +90,19 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
         """Retourne la première image extérieure en JPEG (base64 → bytes)."""
         vehicle_data = (self.coordinator.data or {}).get(self._vin)
         if not vehicle_data:
+            _LOGGER.debug("Camera fetch %s: no vehicle data", self._vin)
             return None
 
         images: list[dict[str, Any]] = vehicle_data.get("images") or []
         if not images:
+            _LOGGER.debug("Camera fetch %s: no images returned", self._vin)
             return None
 
         # Première image disponible
         first = images[0]
         image_data = first.get("image_data") or first.get("data")
         if not image_data:
+            _LOGGER.debug("Camera fetch %s: first image missing image_data/data", self._vin)
             return None
 
         try:
@@ -98,6 +111,7 @@ class VolkswagenCamera(CoordinatorEntity, Camera):
                 image_bytes = base64.b64decode(image_data)
             else:
                 image_bytes = image_data
+            _LOGGER.debug("Camera fetch %s: decoded %d bytes", self._vin, len(image_bytes))
             return image_bytes
         except Exception as err:
             _LOGGER.error("Erreur décodage image VIN %s: %s", self._vin, err)
