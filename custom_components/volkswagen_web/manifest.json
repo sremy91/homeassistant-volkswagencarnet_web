@@ -3,6 +3,7 @@
   "name": "Volkswagen Connect Web",
   "codeowners": ["@sremy91"],
   "config_flow": true,
+  "dependencies": ["http"],
   "documentation": "https://github.com/sremy91/homeassistant-volkswagencarnet_web",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/sremy91/homeassistant-volkswagencarnet_web/issues",
